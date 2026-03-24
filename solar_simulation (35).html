@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar Energy System Builder v2.0</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap');
+:root{
+  --sun:#FFD94A;--wire-idle:#FFD94A;--wire-live:#00E5FF;--wire-fault:#FF6B6B;--wire-bond:#7EC87E;--wire-spd:#F0C040;
+  --glow-b:0 0 12px rgba(91,168,255,0.4);--glow-g:0 0 12px rgba(93,216,122,0.4);--glow-r:0 0 12px rgba(255,107,107,0.5);
+  --bg:#080C18;--panel-bg:#0C1222;--card-bg:#101826;--card2:#141E2E;--border:#263550;
+  --text:#DDE8FF;--dim:#8BA4CC;
+  --ok:#5DD87A;--warn:#FFB340;--danger:#FF6B6B;--info:#5BA8FF;--hazard:#FF4444;
+  --solar:#5BA8FF;--battery:#5DD87A;--ctrl:#33D6E8;--inv:#FFB340;--load:#C47EFF;
+  --fuse:#FF8A50;--safety:#F0C040;--ground:#7EC87E;
+  --sb-w:160px;--rp-w:210px;--tut-w:252px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{height:100%;min-height:100vh;}
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;display:flex;flex-direction:column;height:100vh;min-height:0;overflow:hidden;}
+header{background:var(--panel-bg);border-bottom:1px solid var(--border);padding:4px 10px;display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:nowrap;}
+.sun-spin{font-size:1.2rem;animation:spin 10s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+header h1{font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:700;color:var(--sun);letter-spacing:2px;text-transform:uppercase;white-space:nowrap;}
+.hv{font-size:0.62rem;color:var(--dim);font-family:'Share Tech Mono',monospace;background:var(--card-bg);padding:1px 5px;border-radius:3px;border:1px solid var(--border);flex-shrink:0;}
+.hbtns{margin-left:auto;display:flex;gap:4px;flex-wrap:nowrap;}
+.btn{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.72rem;letter-spacing:1px;padding:4px 9px;border:none;border-radius:4px;cursor:pointer;text-transform:uppercase;transition:all 0.15s;white-space:nowrap;}
+.btn-wire{background:#0D3040;color:var(--ctrl);border:1px solid var(--ctrl);}
+.btn-wire:hover,.btn-wire.on{background:var(--ctrl);color:#000;}
+.btn-run{background:#0B2E12;color:var(--ok);border:1px solid var(--ok);}
+.btn-run:hover{background:var(--ok);color:#000;}
+.btn-hint{background:#1A2040;color:var(--info);border:1px solid var(--info);}
+.btn-hint:hover{background:var(--info);color:#000;}
+.btn-exp{background:#1A1000;color:var(--warn);border:1px solid var(--warn);}
+.btn-exp:hover{background:var(--warn);color:#000;}
+.btn-del{background:#200A0A;color:var(--danger);border:1px solid var(--danger);}
+.btn-del:hover{background:var(--danger);color:#fff;}
+.scbar{background:var(--card-bg);border-bottom:1px solid var(--border);padding:3px 10px;display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:nowrap;overflow-x:auto;}
+.scbar label{font-size:0.68rem;color:var(--dim);font-family:'Rajdhani',sans-serif;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
+.sbtn{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:600;letter-spacing:1px;padding:2px 8px;border:1px solid var(--border);background:var(--card2);color:var(--dim);border-radius:3px;cursor:pointer;transition:all 0.13s;text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
+.sbtn:hover{border-color:var(--info);color:var(--info);}
+.sbtn.on{background:rgba(91,168,255,0.1);border-color:var(--info);color:var(--info);}
+.sbtn.tut-btn{border-color:var(--sun);color:var(--sun);background:rgba(255,217,74,0.07);}
+.sbtn.tut-btn.on{background:rgba(255,217,74,0.18);}
+/* .sgoal replaced by #scen-panel */
+.main{display:flex;flex:1;overflow:hidden;min-height:0;}
+.sidebar{width:var(--sb-w);min-width:var(--sb-w);background:var(--panel-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.sbs{border-bottom:1px solid var(--border);}
+/* Scenario detail panel -- shown below scbar for non-free scenarios */
+#scen-panel{display:none;background:linear-gradient(135deg,rgba(26,16,0,0.95),rgba(32,20,0,0.95));border-bottom:2px solid var(--warn);padding:8px 14px;flex-shrink:0;font-family:'Exo 2',sans-serif;}
+#scen-panel.show{display:block;}
+.sp-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.sp-title{font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:700;color:var(--warn);letter-spacing:1px;text-transform:uppercase;}
+.sp-badge{font-family:'Share Tech Mono',monospace;font-size:0.62rem;background:rgba(255,179,64,0.15);border:1px solid var(--warn);color:var(--warn);padding:1px 6px;border-radius:3px;}
+.sp-body{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
+.sp-section{font-size:0.72rem;line-height:1.55;}
+.sp-section strong{color:var(--text);font-size:0.73rem;display:block;margin-bottom:2px;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,179,64,0.2);padding-bottom:2px;margin-bottom:4px;}
+.sp-req{color:var(--dim);}
+.sp-req li{margin-bottom:2px;list-style:none;padding-left:0;}
+.sp-req li::before{content:"▸ ";color:var(--warn);}
+.sp-close{margin-left:auto;background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:0.8rem;padding:2px 6px;border-radius:3px;flex-shrink:0;}
+.sp-close:hover{color:var(--danger);}
+
+.sbs-hdr{display:flex;align-items:center;justify-content:space-between;padding:5px 7px;cursor:pointer;user-select:none;font-family:'Rajdhani',sans-serif;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;color:var(--dim);transition:background 0.12s;}
+.sbs-hdr:hover{background:var(--card-bg);}
+.sbs-arrow{font-size:0.6rem;transition:transform 0.2s;color:var(--dim);}
+.sbs.collapsed .sbs-arrow{transform:rotate(-90deg);}
+.sbs-body{padding:5px 5px 6px;}
+.sbs.collapsed .sbs-body{display:none;}
+.cc{background:var(--card-bg);border:1px solid var(--border);border-radius:4px;padding:4px 6px;margin-bottom:2px;cursor:grab;transition:border-color 0.12s,transform 0.12s;user-select:none;position:relative;}
+.cc:last-child{margin-bottom:0;}
+.cc:hover{border-color:#3a5080;transform:translateX(2px);background:var(--card2);}
+.cc:active{cursor:grabbing;}
+.ch{display:flex;align-items:center;gap:3px;margin-bottom:1px;}
+.ci{font-size:0.88rem;}.cn{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.76rem;}
+.cs{font-size:0.64rem;color:var(--dim);font-family:'Share Tech Mono',monospace;line-height:1.4;}
+.cbg{position:absolute;top:2px;right:2px;font-size:0.56rem;padding:1px 3px;border-radius:6px;font-family:'Share Tech Mono',monospace;font-weight:700;}
+.bb{background:#0D2A50;color:#5BA8FF;border:1px solid #2A5090;}
+.bg{background:#0B2A17;color:#5DD87A;border:1px solid #1A5C30;}
+.bt{background:#092A30;color:#33D6E8;border:1px solid #1A5C66;}
+.bo{background:#2A1A08;color:#FFB340;border:1px solid #6B4010;}
+.bp{background:#1E0A2E;color:#C47EFF;border:1px solid #5A2090;}
+.br{background:#2A0E08;color:#FF8A50;border:1px solid #6B2A10;}
+.by{background:#2A2208;color:#F0C040;border:1px solid #6B5510;}
+.bgr{background:#0A1E10;color:#7EC87E;border:1px solid #2A5030;}
+.cvwrap{flex:1;position:relative;overflow:hidden;background:linear-gradient(rgba(38,53,80,0.2) 1px,transparent 1px),linear-gradient(90deg,rgba(38,53,80,0.2) 1px,transparent 1px);background-size:36px 36px;background-color:var(--bg);}
+.hint0{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--dim);pointer-events:none;z-index:1;}
+.hint0 h2{font-family:'Rajdhani',sans-serif;font-size:1.3rem;letter-spacing:3px;margin-bottom:6px;color:rgba(139,164,204,0.4);}
+.hint0 p{font-size:0.76rem;line-height:1.6;}
+#wsvg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;}
+#wsvg.wire-mode{pointer-events:all;cursor:crosshair;}
+.wi{stroke:var(--wire-idle);stroke-width:2;fill:none;stroke-linecap:round;stroke-dasharray:4,3;}
+.wl{stroke:var(--wire-live);stroke-width:3;fill:none;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(0,229,255,0.5));}
+.wf{stroke:var(--wire-fault);stroke-width:3;fill:none;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(255,107,107,0.6));stroke-dasharray:8,4;}
+.wt{stroke:rgba(255,255,255,0.3);stroke-width:2;fill:none;stroke-dasharray:6,4;}
+.wsvg-path{stroke-width:8;opacity:0;pointer-events:stroke;cursor:pointer;fill:none;}
+.wb{stroke:var(--wire-bond);stroke-width:2;fill:none;stroke-linecap:round;stroke-dasharray:6,3;filter:drop-shadow(0 0 3px rgba(126,200,126,0.5));}
+.wspd{stroke:var(--wire-spd);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-dasharray:2,4;opacity:0.75;}
+.cv{position:absolute;background:var(--card-bg);border:2px solid var(--border);border-radius:6px;padding:7px 9px;cursor:move;user-select:none;min-width:108px;z-index:10;}
+.cv:hover{z-index:20;}
+.cv.ts{border-color:rgba(91,168,255,0.5);}.cv.tb{border-color:rgba(93,216,122,0.5);}.cv.tc{border-color:rgba(51,214,232,0.5);}.cv.ti{border-color:rgba(255,179,64,0.5);}.cv.tl{border-color:rgba(196,126,255,0.5);}.cv.tf{border-color:rgba(255,138,80,0.5);}.cv.td{border-color:rgba(240,192,64,0.5);}.cv.tg{border-color:rgba(126,200,126,0.5);}.cv.tcb{border-color:rgba(91,168,255,0.38);}.cv.tsp{border-color:rgba(240,192,64,0.38);}
+.cv.fault{animation:fpulse 0.55s ease-in-out 3;}
+@keyframes fpulse{0%,100%{box-shadow:none;}50%{box-shadow:0 0 16px rgba(255,68,68,0.8);border-color:#FF4444!important;}}
+
+/* ── FIRE overlay on hazard components ── */
+.cv.on-fire{animation:fpulse 0.55s ease-in-out 3,fireflicker 0.18s ease-in-out infinite;}
+@keyframes fireflicker{
+  0%{box-shadow:0 0 8px 2px rgba(255,100,0,0.7),0 0 24px 6px rgba(255,60,0,0.4);}
+  33%{box-shadow:0 0 14px 4px rgba(255,180,0,0.8),0 0 32px 10px rgba(255,80,0,0.5);}
+  66%{box-shadow:0 0 10px 3px rgba(255,60,0,0.6),0 0 20px 8px rgba(255,140,0,0.45);}
+  100%{box-shadow:0 0 8px 2px rgba(255,100,0,0.7),0 0 24px 6px rgba(255,60,0,0.4);}
+}
+
+/* ── Flow dot on live wires (circle travelling along path) ── */
+.flow-dot{fill:var(--wire-live);filter:drop-shadow(0 0 3px rgba(0,229,255,0.9));}
+.flow-dot-bond{fill:var(--wire-bond);filter:drop-shadow(0 0 3px rgba(126,200,126,0.8));}
+
+/* ── Spark burst ── */
+.spark{stroke:var(--sun);stroke-width:1.5;fill:none;stroke-linecap:round;}
+.spark-r{stroke:var(--danger);stroke-width:1.5;fill:none;stroke-linecap:round;}
+@keyframes sparkfade{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(2.2);}}
+.spark-group{animation:sparkfade 0.55s ease-out forwards;}
+
+/* ── Wire snap flash ── */
+@keyframes wireflash{0%{opacity:1;}40%{opacity:0.15;stroke-width:6;}100%{opacity:0;}}
+.wflash{animation:wireflash 0.4s ease-out forwards;}
+.cvh{display:flex;align-items:center;gap:4px;margin-bottom:3px;}
+.cvi{font-size:1.1rem;}.cvn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.82rem;}
+.cvs{font-size:0.66rem;color:var(--dim);font-family:'Share Tech Mono',monospace;line-height:1.5;}
+.wgsel{margin-top:4px;}
+.wgsel label{font-size:0.62rem;color:var(--dim);font-family:'Share Tech Mono',monospace;}
+.wgsel select{width:100%;margin-top:2px;background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:3px;font-family:'Share Tech Mono',monospace;font-size:0.64rem;padding:2px 3px;cursor:pointer;}
+.ports{display:flex;justify-content:space-between;margin-top:5px;}
+.port{width:12px;height:12px;border-radius:50%;border:2px solid var(--border);cursor:crosshair;transition:transform 0.12s;}
+.ppos{border-color:#FF6B6B;background:rgba(255,107,107,0.2);border-radius:50%;}.pneg{border-color:#5BA8FF;background:rgba(91,168,255,0.2);border-radius:2px;}.pgnd{border-color:#7EC87E;background:rgba(126,200,126,0.2);border-radius:0;transform:rotate(45deg);}.pgnd:hover{transform:rotate(45deg) scale(1.6);}.pbond{border-color:#7EC87E;background:rgba(126,200,126,0.15);border-style:dashed;border-radius:50% 50% 0 50%;}
+.port:hover{transform:scale(1.6);}.port.used{background:var(--wire-live)!important;border-color:var(--wire-live)!important;}
+.plbl{font-size:0.62rem;color:var(--dim);font-family:'Share Tech Mono',monospace;font-weight:700;}
+.pw{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.cvdel{position:absolute;top:-7px;right:-7px;width:15px;height:15px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:0.6rem;line-height:15px;text-align:center;display:none;z-index:30;}
+.cv:hover .cvdel{display:block;}
+.rp{width:var(--rp-w);min-width:var(--rp-w);background:var(--panel-bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+.rps{padding:6px 8px;border-bottom:1px solid var(--border);}
+.rps h3{font-family:'Rajdhani',sans-serif;font-size:0.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:4px;margin-top:6px;}
+.mr{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.ml{font-size:0.72rem;color:var(--dim);}
+.mv{font-family:'Share Tech Mono',monospace;font-size:0.76rem;font-weight:600;}
+.mvg{color:var(--ok);}.mvw{color:var(--warn);}.mvb{color:var(--danger);}.mvn{color:var(--text);}
+.gbar{height:3px;background:var(--border);border-radius:2px;margin-bottom:5px;overflow:hidden;}
+.gfill{height:100%;border-radius:2px;transition:width 0.5s,background 0.5s;}
+.fbl{display:flex;flex-direction:column;gap:4px;}
+.fbi{display:flex;gap:5px;align-items:flex-start;background:var(--card-bg);border-radius:4px;padding:5px 6px;font-size:0.72rem;line-height:1.45;border-left:3px solid var(--border);}
+.fok{border-left-color:var(--ok);}.fwn{border-left-color:var(--warn);}.fbd{border-left-color:var(--danger);}.fin{border-left-color:var(--info);}.fhz{border-left-color:var(--hazard);background:rgba(255,68,68,0.05);}
+.fii{font-size:0.82rem;flex-shrink:0;margin-top:1px;}
+.gbadge{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;font-family:'Rajdhani',sans-serif;font-size:1.3rem;font-weight:700;margin:0 auto 4px;border:3px solid var(--border);transition:all 0.35s;}
+.gA{border-color:var(--ok);color:var(--ok);background:rgba(93,216,122,0.07);box-shadow:var(--glow-g);}
+.gB{border-color:#A3D96A;color:#A3D96A;background:rgba(163,217,106,0.07);}
+.gC{border-color:var(--warn);color:var(--warn);background:rgba(255,179,64,0.07);}
+.gD{border-color:#FF8C5A;color:#FF8C5A;background:rgba(255,140,90,0.07);}
+.gF{border-color:var(--danger);color:var(--danger);background:rgba(255,107,107,0.07);box-shadow:var(--glow-r);}
+.g0{border-color:var(--border);color:var(--dim);}
+.glbl{text-align:center;font-size:0.72rem;color:var(--dim);}
+.mbtn{flex:1;padding:4px 2px;font-family:'Rajdhani',sans-serif;font-size:0.68rem;letter-spacing:1px;text-transform:uppercase;border:1px solid var(--border);background:var(--card-bg);color:var(--dim);cursor:pointer;transition:all 0.13s;border-radius:3px;}
+.mbtn.on{background:rgba(91,168,255,0.1);color:var(--info);border-color:var(--info);}
+.legrow{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:0.68rem;color:var(--dim);}
+.ldot{width:14px;height:14px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.62rem;line-height:1;}
+.hmod{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:400;align-items:center;justify-content:center;}
+.hmod.show{display:flex;}
+.hbox{background:var(--panel-bg);border:1px solid var(--info);border-radius:8px;padding:18px;max-width:380px;width:88%;box-shadow:var(--glow-b);}
+.hbox h2{font-family:'Rajdhani',sans-serif;font-size:1.05rem;color:var(--info);margin-bottom:8px;letter-spacing:1px;}
+.hbox p{font-size:0.8rem;line-height:1.55;color:var(--text);margin-bottom:8px;}
+.htip{background:var(--card-bg);border-left:3px solid var(--warn);padding:6px 8px;border-radius:3px;font-size:0.74rem;color:var(--warn);margin-bottom:11px;}
+.hclose{width:100%;padding:6px;background:var(--info);color:#000;border:none;border-radius:4px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.82rem;letter-spacing:1px;cursor:pointer;text-transform:uppercase;}
+.rmod{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;}
+.rmod.show{display:flex;}
+.rbox{background:#fff;color:#111;border-radius:8px;padding:22px;max-width:640px;width:100%;font-family:'Exo 2',sans-serif;}
+.rbox h1{font-family:'Rajdhani',sans-serif;font-size:1.35rem;color:#1a1a2e;letter-spacing:2px;margin-bottom:3px;}
+.rmeta{font-size:0.74rem;color:#666;margin-bottom:14px;border-bottom:2px solid #eee;padding-bottom:8px;}
+.rbox h2{font-family:'Rajdhani',sans-serif;font-size:0.88rem;letter-spacing:1px;color:#333;margin:10px 0 4px;text-transform:uppercase;border-left:4px solid #1565C0;padding-left:6px;}
+.rtbl{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:0.74rem;}
+.rtbl th{background:#1565C0;color:#fff;padding:4px 8px;text-align:left;font-family:'Rajdhani',sans-serif;font-size:0.78rem;letter-spacing:1px;}
+.rtbl td{padding:3px 8px;border-bottom:1px solid #eee;vertical-align:top;}
+.rtbl tr:nth-child(even) td{background:#f8f8f8;}
+.rok{color:#2E7D32;font-weight:600;}.rwn{color:#E65100;font-weight:600;}.rbd{color:#C62828;font-weight:600;}
+.rgrade{font-family:'Rajdhani',sans-serif;font-size:2.5rem;font-weight:700;text-align:center;padding:9px;border-radius:6px;margin-bottom:9px;}
+.rfb{background:#f5f5f5;border-radius:4px;padding:8px;font-size:0.72rem;line-height:1.5;margin-bottom:10px;}
+.rfb .ri{padding:3px 0;border-bottom:1px solid #e0e0e0;}.rfb .ri:last-child{border:none;}
+.rbtns{display:flex;gap:8px;margin-top:12px;}
+.rbtns button{flex:1;padding:7px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.82rem;letter-spacing:1px;border:none;border-radius:4px;cursor:pointer;text-transform:uppercase;}
+.rprint{background:#1565C0;color:#fff;}.rclose{background:#eee;color:#333;}
+/* ── TUTORIAL PANEL ── */
+#spot-ring{display:none;position:fixed;border-radius:6px;pointer-events:none;z-index:9999;animation:spotpulse 1.3s ease-in-out infinite;}
+@keyframes spotpulse{0%,100%{box-shadow:0 0 0 3px var(--sun),0 0 0 8px rgba(255,217,74,0.18);}50%{box-shadow:0 0 0 5px var(--sun),0 0 0 16px rgba(255,217,74,0.06);}}
+/* Full-width tutorial panel */
+#tut-panel{display:none;width:var(--tut-w);min-width:var(--tut-w);background:var(--panel-bg);border-left:2px solid var(--sun);flex-direction:column;overflow:hidden;flex-shrink:0;transition:width 0.2s,min-width 0.2s;}
+#tut-panel.show{display:flex;}
+/* MINIMIZED: collapses to 36px gold tab; .rp sibling becomes visible via CSS */
+#tut-panel.minimized{width:36px!important;min-width:36px!important;cursor:pointer;}
+#tut-panel.minimized .tp-body,#tut-panel.minimized .tp-foot{display:none!important;}
+#tut-panel.minimized .tp-hdr{flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:12px 4px;height:100%;overflow:hidden;border-bottom:none;}
+#tut-panel.minimized .tp-badge{writing-mode:vertical-rl;transform:rotate(180deg);padding:6px 3px;border-radius:4px;font-size:0.6rem;white-space:nowrap;}
+#tut-panel.minimized .tp-title,#tut-panel.minimized .tp-xbtn{display:none;}
+#tut-panel.minimized .tp-minbtn{transform:rotate(180deg);}
+/* CSS sibling selectors control .rp visibility */
+#tut-panel.show:not(.minimized) + .rp{display:none!important;}
+#tut-panel.minimized + .rp{display:flex!important;}
+.tp-hdr{background:linear-gradient(135deg,#1a1200,#201800);border-bottom:1px solid rgba(255,217,74,0.3);padding:8px 10px;flex-shrink:0;display:flex;align-items:center;gap:7px;}
+.tp-badge{background:var(--sun);color:#000;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.68rem;padding:2px 7px;border-radius:8px;white-space:nowrap;flex-shrink:0;}
+.tp-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.85rem;color:var(--sun);letter-spacing:0.5px;line-height:1.2;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.tp-minbtn{background:transparent;border:1px solid rgba(255,217,74,0.4);color:var(--sun);cursor:pointer;font-size:0.7rem;padding:2px 5px;border-radius:3px;flex-shrink:0;line-height:1.2;}
+.tp-minbtn:hover{background:rgba(255,217,74,0.15);}
+.tp-xbtn{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:0.9rem;padding:2px 4px;border-radius:3px;flex-shrink:0;}
+.tp-xbtn:hover{color:var(--danger);}
+.tp-body{flex:1;overflow-y:auto;padding:8px;}
+.tp-what{font-size:0.76rem;line-height:1.52;color:var(--text);margin-bottom:6px;}
+.tp-why{background:var(--card-bg);border-left:3px solid var(--info);padding:5px 7px;border-radius:3px;font-size:0.7rem;color:#b4d0ff;line-height:1.45;margin-bottom:5px;}
+.tp-why-lbl{color:var(--info);display:block;margin-bottom:2px;font-family:'Rajdhani',sans-serif;letter-spacing:1px;font-size:0.65rem;text-transform:uppercase;font-weight:700;}
+.tp-act{background:rgba(255,217,74,0.06);border:1px solid rgba(255,217,74,0.25);border-radius:3px;padding:5px 7px;font-size:0.72rem;color:var(--sun);line-height:1.45;margin-bottom:5px;}
+.tp-act-lbl{display:block;font-family:'Rajdhani',sans-serif;font-size:0.65rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;color:rgba(255,217,74,0.6);font-weight:700;}
+.tp-wait{display:flex;align-items:center;gap:5px;font-size:0.7rem;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:8px;}
+.wdot{width:6px;height:6px;border-radius:50%;background:var(--warn);animation:blink 1s ease-in-out infinite;flex-shrink:0;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+.tp-wait.done{color:var(--ok);}.tp-wait.done .wdot{background:var(--ok);animation:none;}
+.tp-foot{border-top:1px solid var(--border);padding:6px 10px;flex-shrink:0;background:var(--panel-bg);}
+.tp-prog-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.tp-prog{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.tp-pfill{height:100%;background:var(--sun);border-radius:2px;transition:width 0.4s;}
+.tp-plbl{font-size:0.62rem;color:var(--dim);font-family:'Share Tech Mono',monospace;white-space:nowrap;}
+.tp-btns{display:flex;gap:6px;}
+.tp-nbtn{flex:1;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.74rem;letter-spacing:1px;padding:5px 10px;border:none;border-radius:4px;cursor:pointer;text-transform:uppercase;background:var(--sun);color:#000;}
+.tp-nbtn:hover{background:#ffe566;}.tp-nbtn:disabled{background:var(--border);color:var(--dim);cursor:not-allowed;}
+.tp-pbtn{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.7rem;letter-spacing:1px;padding:5px 9px;border:1px solid var(--border);border-radius:4px;cursor:pointer;text-transform:uppercase;background:transparent;color:var(--dim);}
+.tp-pbtn:hover{border-color:var(--info);color:var(--info);}
+#tut-done{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;}
+#tut-done.show{display:flex;}
+.tdc{background:var(--panel-bg);border:1px solid var(--ok);border-radius:10px;padding:22px;max-width:440px;width:90%;text-align:center;box-shadow:var(--glow-g);max-height:88vh;overflow-y:auto;}
+.tdc h2{font-family:'Rajdhani',sans-serif;font-size:1.35rem;color:var(--ok);letter-spacing:2px;margin-bottom:8px;}
+.tdc p{font-size:0.78rem;line-height:1.6;color:var(--text);margin-bottom:12px;}
+.tdc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;text-align:left;}
+.tdc-item{background:var(--card-bg);border-radius:4px;padding:6px 8px;font-size:0.68rem;color:var(--dim);border-left:3px solid var(--ok);}
+.tdc-item strong{display:block;color:var(--text);font-size:0.74rem;margin-bottom:1px;}
+.tdc-btns{display:flex;gap:8px;justify-content:center;}
+.tdc-btns button{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.8rem;letter-spacing:1px;padding:7px 16px;border:none;border-radius:4px;cursor:pointer;text-transform:uppercase;}
+.tdc-go{background:var(--ok);color:#000;}.tdc-again{background:var(--card2);color:var(--text);border:1px solid var(--border);}
+
+/* WCAG 2.1 AA focus indicators — visible for keyboard navigation */
+:focus-visible{outline:2px solid var(--sun);outline-offset:2px;}
+.btn:focus-visible,.sbtn:focus-visible,.mbtn:focus-visible{outline:2px solid var(--sun);outline-offset:2px;}
+.port:focus-visible{outline:2px solid #fff;outline-offset:3px;}
+.cc:focus-visible{outline:2px solid var(--sun);outline-offset:2px;}
+.cvdel:focus-visible{outline:2px solid var(--sun);outline-offset:2px;}
+select:focus-visible{outline:2px solid var(--sun);outline-offset:1px;}
+.skip-link{position:absolute;left:-9999px;top:4px;background:var(--sun);color:#000;padding:4px 10px;border-radius:3px;font-weight:700;z-index:10000;font-size:0.8rem;text-decoration:none;}.skip-link:focus{left:4px;}
+/* Respect OS reduced-motion preference -- disable all animations */
+@media (prefers-reduced-motion:reduce){
+  .cv.fault,.cv.on-fire{animation:none!important;}
+  .flow-dot,.flow-dot-bond{display:none!important;}
+  .spark,.spark-r{display:none!important;}
+  .wflash{animation:none!important;}
+  .spark-group{animation:none!important;}
+  .wl{filter:none;}
+  .wb{filter:none;}
+  .wspd{opacity:0.4;}
+}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--panel-bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+</style>
+</head>
+<body>
+<a href="#cvwrap" class="skip-link">Skip to canvas</a>
+<div class="hmod" id="hmod"><div class="hbox"><h2 id="htitle">Hint</h2><p id="hbody"></p><div class="htip" id="htip"></div><button class="hclose" onclick="closeHint()">Got It</button></div></div>
+<div class="rmod" id="rmod"><div class="rbox"><h1>Solar System Design Rubric</h1><div class="rmeta" id="rmeta"></div><div id="rbody"></div><div class="rbtns"><button class="rprint" onclick="printRubric()">Print / Save PDF</button><button class="rclose" onclick="document.getElementById('rmod').classList.remove('show')">Close</button></div></div></div>
+<div id="spot-ring"></div>
+<div id="tut-done"><div class="tdc"><div style="font-size:2.5rem;margin-bottom:6px">&#127891;</div><h2>Tutorial Complete!</h2><p>You built a complete, code-compliant off-grid solar system from scratch.</p><div class="tdc-grid"><div class="tdc-item"><strong>Solar Panels</strong>Convert sunlight to DC. Size to daily Wh needs.</div><div class="tdc-item"><strong>Charge Controller</strong>Prevents overcharge. MPPT gets ~30% more than PWM.</div><div class="tdc-item"><strong>Battery</strong>LiFePO4 = 80% DoD, 2000+ cycles, safest chemistry.</div><div class="tdc-item"><strong>Fuses (NEC 690.9)</strong>Required on all conductors. Prevents fires.</div><div class="tdc-item"><strong>Disconnect (NEC 690.13)</strong>Manual isolation for emergencies.</div><div class="tdc-item"><strong>Ground Rod (NEC 690.41)</strong>Earth ground prevents electrocution.</div><div class="tdc-item"><strong>Surge Protector</strong>Protects all components from lightning.</div><div class="tdc-item"><strong>Wire Gauge</strong>Must match current — undersized wire = fire.</div></div><p style="font-size:0.72rem;color:var(--dim);margin-bottom:14px">Now try the <strong style="color:var(--warn)">Cabin</strong>, <strong style="color:var(--warn)">School</strong>, or <strong style="color:var(--warn)">EV</strong> scenarios!</p><div class="tdc-btns"><button class="tdc-go" onclick="document.getElementById('tut-done').classList.remove('show')">Explore Freely</button><button class="tdc-again" onclick="startTutorial()">Redo Tutorial</button></div></div></div>
+<header>
+  <span class="sun-spin">&#9728;</span>
+  <h1>Solar System Builder</h1>
+  <span class="hv">v2.0</span>
+  <div class="hbtns">
+    <button class="btn btn-wire" id="bwire" onclick="toggleWire()" title="Wire Mode: click ports to connect, click a wire to delete it">&#128268; Wire Mode</button>
+    <button class="btn btn-run" onclick="analyze()">&#9889; Analyze</button>
+    <button class="btn btn-hint" onclick="showHint()">&#128161; Hint</button>
+    <button class="btn btn-exp" onclick="showRubric()">&#128203; Rubric</button>
+    <button class="btn btn-del" onclick="clearAll()">&#128465; Clear</button>
+  </div>
+</header>
+<div class="scbar">
+  <label>Scenario:</label>
+  <button class="sbtn on" id="sb-free" onclick="setScen('free')">Free Build</button>
+  <button class="sbtn" id="sb-cabin" onclick="setScen('cabin')">&#127957; Cabin</button>
+  <button class="sbtn" id="sb-school" onclick="setScen('school')">&#127979; School</button>
+  <button class="sbtn" id="sb-ev" onclick="setScen('ev')">&#128663; EV</button>
+  <button class="sbtn tut-btn" id="sb-tutorial" onclick="startTutorial()">&#127891; Tutorial</button>
+
+</div>
+<div id="scen-panel" role="region" aria-label="Scenario details" aria-live="polite">
+  <div class="sp-header">
+    <span class="sp-title" id="sp-title"></span>
+    <span class="sp-badge" id="sp-badge"></span>
+    <button class="sp-close" onclick="dismissScenPanel()" aria-label="Dismiss scenario details">&#x2715;</button>
+  </div>
+  <div class="sp-body" id="sp-body"></div>
+</div>
+<div class="main">
+<div class="sidebar">
+  <div class="sbs" id="sbs-solar"><div class="sbs-hdr" onclick="toggleSbs('solar')"><span>&#9728; Solar Panels</span><span class="sbs-arrow">&#9660;</span></div><div class="sbs-body">
+    <div class="cc" draggable="true" data-type="solar" data-id="sp50" data-name="50W Panel" data-watts="50" data-voc="21" data-isc="3.1" data-efficiency="14" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#9632;</span><span class="cn">50W Panel</span></div><div class="cs">Voc:21V Isc:3.1A 14%</div><span class="cbg bb">ENTRY</span></div>
+    <div class="cc" draggable="true" data-type="solar" data-id="sp100" data-name="100W Panel" data-watts="100" data-voc="22.5" data-isc="5.8" data-efficiency="18" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#9632;</span><span class="cn">100W Panel</span></div><div class="cs">Voc:22.5V Isc:5.8A 18%</div><span class="cbg bb">STD</span></div>
+    <div class="cc" draggable="true" data-type="solar" data-id="sp200" data-name="200W Panel" data-watts="200" data-voc="45" data-isc="5.8" data-efficiency="21" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#9632;</span><span class="cn">200W Panel</span></div><div class="cs">Voc:45V Isc:5.8A 21%</div><span class="cbg bb">HI-EFF</span></div>
+  </div></div>
+  <div class="sbs" id="sbs-battery"><div class="sbs-hdr" onclick="toggleSbs('battery')"><span>&#128267; Batteries</span><span class="sbs-arrow">&#9660;</span></div><div class="sbs-body">
+    <div class="cc" draggable="true" data-type="battery" data-id="bat12la" data-name="12V 20Ah Lead-Acid" data-voltage="12" data-capacity="20" data-chemistry="Lead-Acid" data-dod="50" data-efficiency="80" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128267;</span><span class="cn">12V 20Ah Lead-Acid</span></div><div class="cs">DoD:50% 80%eff</div><span class="cbg bg">BUDGET</span></div>
+    <div class="cc" draggable="true" data-type="battery" data-id="bat12lifepo" data-name="12V 50Ah LiFePO4" data-voltage="12" data-capacity="50" data-chemistry="LiFePO4" data-dod="80" data-efficiency="97" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128267;</span><span class="cn">12V 50Ah LiFePO4</span></div><div class="cs">DoD:80% 97%eff</div><span class="cbg bg">BEST</span></div>
+    <div class="cc" draggable="true" data-type="battery" data-id="bat24agm" data-name="24V 30Ah AGM" data-voltage="24" data-capacity="30" data-chemistry="AGM" data-dod="60" data-efficiency="85" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128267;</span><span class="cn">24V 30Ah AGM</span></div><div class="cs">DoD:60% 85%eff</div><span class="cbg bg">STD</span></div>
+    <div class="cc" draggable="true" data-type="battery" data-id="bat48lifepo" data-name="48V 100Ah LiFePO4" data-voltage="48" data-capacity="100" data-chemistry="LiFePO4" data-dod="80" data-efficiency="98" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128267;</span><span class="cn">48V 100Ah LiFePO4</span></div><div class="cs">DoD:80% 98%eff EV</div><span class="cbg bg">EV</span></div>
+  </div></div>
+  <div class="sbs collapsed" id="sbs-controller"><div class="sbs-hdr" onclick="toggleSbs('controller')"><span>&#9881; Controllers</span><span class="sbs-arrow">&#9660;</span></div><div class="sbs-body">
+    <div class="cc" draggable="true" data-type="controller" data-id="pwm10" data-name="PWM 10A" data-amps="10" data-tech="PWM" data-efficiency="75" data-maxvoc="25" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#127895;</span><span class="cn">PWM 10A</span></div><div class="cs">MaxVoc:25V Eff:75%</div><span class="cbg bt">PWM</span></div>
+    <div class="cc" draggable="true" data-type="controller" data-id="mppt20" data-name="MPPT 20A" data-amps="20" data-tech="MPPT" data-efficiency="97" data-maxvoc="50" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#127895;</span><span class="cn">MPPT 20A</span></div><div class="cs">MaxVoc:50V Eff:97%</div><span class="cbg bt">MPPT</span></div>
+    <div class="cc" draggable="true" data-type="controller" data-id="mppt60" data-name="MPPT 60A" data-amps="60" data-tech="MPPT" data-efficiency="98" data-maxvoc="150" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#127895;</span><span class="cn">MPPT 60A</span></div><div class="cs">MaxVoc:150V Eff:98%</div><span class="cbg bt">LARGE</span></div>
+  </div></div>
+  <div class="sbs collapsed" id="sbs-inverter"><div class="sbs-hdr" onclick="toggleSbs('inverter')"><span>&#128260; Inverters</span><span class="sbs-arrow">&#9660;</span></div><div class="sbs-body">
+    <div class="cc" draggable="true" data-type="inverter" data-id="inv300" data-name="300W Inverter" data-watts="300" data-inputv="12" data-outputv="120" data-efficiency="88" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128268;</span><span class="cn">300W Inverter</span></div><div class="cs">12V to 120VAC 88%eff</div><span class="cbg bo">300W</span></div>
+    <div class="cc" draggable="true" data-type="inverter" data-id="inv1000" data-name="1000W Inverter" data-watts="1000" data-inputv="24" data-outputv="120" data-efficiency="93" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128268;</span><span class="cn">1000W Inverter</span></div><div class="cs">24V to 120VAC 93%eff</div><span class="cbg bo">1KW</span></div>
+    <div class="cc" draggable="true" data-type="inverter" data-id="inv3000" data-name="3000W Inverter" data-watts="3000" data-inputv="48" data-outputv="240" data-efficiency="95" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128268;</span><span class="cn">3000W Inverter</span></div><div class="cs">48V to 240VAC 95%eff</div><span class="cbg bo">3KW</span></div>
+  </div></div>
+  <div class="sbs" id="sbs-safety"><div class="sbs-hdr" onclick="toggleSbs('safety')"><span>&#128737; Safety Devices</span><span class="sbs-arrow">&#9660;</span></div><div class="sbs-body">
+    <div class="cc" draggable="true" data-type="fuse" data-id="fuse15" data-name="15A Fuse/Breaker" data-amps="15" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#9889;</span><span class="cn">15A Fuse/Breaker</span></div><div class="cs">Overcurrent NEC 690.9</div><span class="cbg br">FUSE</span></div>
+    <div class="cc" draggable="true" data-type="fuse" data-id="fuse30" data-name="30A Fuse/Breaker" data-amps="30" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#9889;</span><span class="cn">30A Fuse/Breaker</span></div><div class="cs">Overcurrent NEC 690.9</div><span class="cbg br">FUSE</span></div>
+    <div class="cc" draggable="true" data-type="disconnect" data-id="disc1" data-name="Disconnect Switch" data-rating="60" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128294;</span><span class="cn">Disconnect Switch</span></div><div class="cs">60A NEC 690.13</div><span class="cbg by">DISC</span></div>
+    <div class="cc" draggable="true" data-type="ground" data-id="gnd1" data-name="Ground Rod" data-resistance="25" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#127807;</span><span class="cn">Ground Rod</span></div><div class="cs">Earth NEC 690.41</div><span class="cbg bgr">GND</span></div>
+    <div class="cc" draggable="true" data-type="surge" data-id="spd1" data-name="Surge Protector" data-clamping="600" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128737;</span><span class="cn">Surge Protector (SPD)</span></div><div class="cs">600V clamp NEC 230.67</div><span class="cbg by">SPD</span></div>
+    <div class="cc" draggable="true" data-type="combiner" data-id="comb1" data-name="Combiner Box" data-inputs="4" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128230;</span><span class="cn">Combiner Box</span></div><div class="cs">4-string w/ fusing</div><span class="cbg bb">COMB</span></div>
+    <div class="cc" draggable="true" data-type="acbreaker" data-id="acb1" data-name="AC Breaker" data-amps="20" data-voltage="120" ondragstart="dstart(event)" tabindex="0" role="button" aria-label="AC Breaker component"><div class="ch"><span class="ci">&#9889;</span><span class="cn">AC Breaker</span></div><div class="cs">20A 120VAC NEC 690.8</div><span class="cbg br">AC</span></div>
+  </div></div>
+  <div class="sbs collapsed" id="sbs-load"><div class="sbs-hdr" onclick="toggleSbs('load')"><span>&#128161; Loads</span><span class="sbs-arrow">&#9660;</span></div><div class="sbs-body">
+    <div class="cc" draggable="true" data-type="load" data-id="load-led" data-name="LED Lights" data-watts="10" data-voltage="12" data-hours="8" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128161;</span><span class="cn">LED Lights</span></div><div class="cs">10W 12VDC 8h=80Wh/d</div><span class="cbg bp">DC</span></div>
+    <div class="cc" draggable="true" data-type="load" data-id="load-fan" data-name="Ceiling Fan" data-watts="60" data-voltage="120" data-hours="6" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#127744;</span><span class="cn">Ceiling Fan</span></div><div class="cs">60W 120VAC 6h=360Wh/d</div><span class="cbg bp">AC</span></div>
+    <div class="cc" draggable="true" data-type="load" data-id="load-fridge" data-name="Mini Fridge" data-watts="150" data-voltage="120" data-hours="24" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#129514;</span><span class="cn">Mini Fridge</span></div><div class="cs">150W 120VAC 24h=3600Wh/d</div><span class="cbg bp">AC</span></div>
+    <div class="cc" draggable="true" data-type="load" data-id="load-phone" data-name="Phone Charger" data-watts="5" data-voltage="5" data-hours="2" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128241;</span><span class="cn">Phone Charger</span></div><div class="cs">5W USB 2h=10Wh/d</div><span class="cbg bp">USB</span></div>
+    <div class="cc" draggable="true" data-type="load" data-id="load-ev" data-name="EV Charger (L2)" data-watts="7200" data-voltage="240" data-hours="4" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128663;</span><span class="cn">EV Charger (L2)</span></div><div class="cs">7200W 240VAC 4h=28.8kWh/d</div><span class="cbg bp">HIGH</span></div>
+    <div class="cc" draggable="true" data-type="load" data-id="load-proj" data-name="Projector/Display" data-watts="300" data-voltage="120" data-hours="8" ondragstart="dstart(event)" tabindex="0" role="button"><div class="ch"><span class="ci">&#128253;</span><span class="cn">Projector/Display</span></div><div class="cs">300W 120VAC 8h=2400Wh/d</div><span class="cbg bp">AC</span></div>
+  </div></div>
+</div>
+<div class="cvwrap" id="cvwrap" ondragover="event.preventDefault()" ondrop="drop(event)">
+  <div class="hint0" id="hint0"><h2>DRAG COMPONENTS HERE</h2><p>Click Tutorial for a guided walkthrough,<br>or drag parts from the left and click Analyze.</p></div>
+  <svg id="wsvg"></svg>
+</div>
+<div id="tut-panel">
+  <div class="tp-hdr">
+    <span class="tp-badge" id="tp-badge">STEP 1/15</span>
+    <span class="tp-title" id="tp-title">Welcome</span>
+    <button class="tp-minbtn" id="tp-minbtn" onclick="tutToggleMin()" title="Minimize / restore tutorial">&#9664;</button>
+    <button class="tp-xbtn" onclick="exitTutorial()" title="Exit tutorial">&#x2715;</button>
+  </div>
+  <div class="tp-body" id="tp-body">
+    <div class="tp-what" id="tp-what"></div>
+    <div class="tp-why" id="tp-why" style="display:none"><span class="tp-why-lbl">Why This Matters</span><span id="tp-why-txt"></span></div>
+    <div class="tp-act" id="tp-act" style="display:none"><span class="tp-act-lbl">Your Action</span><span id="tp-act-txt"></span></div>
+    <div class="tp-wait" id="tp-wait" style="display:none"><span class="wdot"></span><span id="tp-wait-txt">Waiting for you to complete this step...</span></div>
+  </div>
+  <div class="tp-foot">
+    <div class="tp-prog-row"><div class="tp-prog"><div class="tp-pfill" id="tp-pfill" style="width:0%"></div></div><span class="tp-plbl" id="tp-plbl">1/15</span></div>
+    <div class="tp-btns">
+      <button class="tp-pbtn" id="tp-pbtn" onclick="tutPrev()">&#8592; Back</button>
+      <button class="tp-nbtn" id="tp-nbtn" onclick="tutNext()">Next &#8594;</button>
+    </div>
+  </div>
+</div>
+<div class="rp">
+  <div class="rps"><div style="display:flex;gap:4px;margin-bottom:6px;"><button class="mbtn on" id="t-metrics" onclick="showTab('metrics')">Metrics</button><button class="mbtn" id="t-feedback" onclick="showTab('feedback')">Feedback</button><button class="mbtn" id="t-guide" onclick="showTab('guide')">Guide</button></div></div>
+  <div id="tc-metrics">
+    <div class="rps"><div style="text-align:center;margin-bottom:4px;"><div class="gbadge g0" id="gbadge">&#8212;</div><div class="glbl" id="glbl">Add components to begin</div></div></div>
+    <div class="rps"><h3>Power</h3><div class="mr"><span class="ml">Panel Output</span><span class="mv mvn" id="m-pw">0 W</span></div><div class="mr"><span class="ml">Daily Generation</span><span class="mv mvn" id="m-gen">0 Wh/day</span></div><div class="mr"><span class="ml">Daily Consumption</span><span class="mv mvn" id="m-cons">0 Wh/day</span></div><div class="gbar" data-label="Power coverage"><div class="gfill" id="g-pwr" style="width:0%"></div></div><h3>Battery</h3><div class="mr"><span class="ml">Capacity</span><span class="mv mvn" id="m-bcap">0 Ah</span></div><div class="mr"><span class="ml">Usable Energy</span><span class="mv mvn" id="m-buse">0 Wh</span></div><div class="mr"><span class="ml">Autonomy</span><span class="mv mvn" id="m-auto">&#8212; days</span></div><div class="gbar" data-label="Battery autonomy"><div class="gfill" id="g-bat" style="width:0%"></div></div><h3>Efficiency</h3><div class="mr"><span class="ml">System Eff.</span><span class="mv mvn" id="m-eff">&#8212;</span></div><div class="mr"><span class="ml">Controller</span><span class="mv mvn" id="m-ctrl">None</span></div><div class="mr"><span class="ml">Volt. Match</span><span class="mv mvn" id="m-vmatch">&#8212;</span></div><div class="gbar" data-label="System efficiency"><div class="gfill" id="g-eff" style="width:0%"></div></div></div>
+    <div class="rps"><h3>Safety / NEC</h3><div class="mr"><span class="ml">Fuse/Breaker</span><span class="mv mvn" id="m-fuse">None</span></div><div class="mr"><span class="ml">Disconnect</span><span class="mv mvn" id="m-disc">None</span></div><div class="mr"><span class="ml">Ground Rod</span><span class="mv mvn" id="m-gnd">None</span></div><div class="mr"><span class="ml">Surge (SPD)</span><span class="mv mvn" id="m-spd">None</span></div>
+      <div class="mr"><span class="ml">AC Breaker</span><span class="mv mvn" id="m-acb">None</span></div><div class="mr"><span class="ml">Wire Gauge</span><span class="mv mvn" id="m-wg">&#8212;</span></div><div class="mr"><span class="ml">NEC Status</span><span class="mv mvn" id="m-nec">&#8212;</span></div></div>
+    <div class="rps"><h3>Scenario</h3><div class="mr"><span class="ml">Active</span><span class="mv mvn" id="m-scen">Free Build</span></div><div class="mr"><span class="ml">Goal Met</span><span class="mv mvn" id="m-goal">&#8212;</span></div></div>
+  </div>
+  <div id="tc-feedback" style="display:none"><div class="rps"><h3>System Feedback</h3><div class="fbl" id="fblist" role="list" aria-live="polite" aria-label="System feedback"><div class="fbi fin" role="listitem"><span class="fii" role="img" aria-label="Info">ℹ️</span><span>Place components and click Analyze.</span></div></div></div></div>
+  <div id="tc-guide" style="display:none"><div class="rps"><h3>Build Order</h3><div class="fbl"><div class="fbi fin"><span class="fii">1</span><span><strong>Solar Panels</strong></span></div><div class="fbi fin"><span class="fii">2</span><span><strong>Combiner Box</strong> (3+ strings)</span></div><div class="fbi fin"><span class="fii">3</span><span><strong>Fuse</strong> (panels to ctrl)</span></div><div class="fbi fin"><span class="fii">4</span><span><strong>Charge Controller</strong></span></div><div class="fbi fin"><span class="fii">5</span><span><strong>Battery Bank</strong></span></div><div class="fbi fin"><span class="fii">6</span><span><strong>Fuse</strong> (bat to loads)</span></div><div class="fbi fin"><span class="fii">7</span><span><strong>Disconnect Switch</strong></span></div><div class="fbi fin"><span class="fii">8</span><span><strong>Surge Protector</strong></span></div><div class="fbi fin"><span class="fii">9</span><span><strong>Inverter</strong> (AC loads)</span></div><div class="fbi fin"><span class="fii">9b</span><span><strong>AC Breaker</strong> on inverter output (NEC 690.8)</span></div><div class="fbi fin"><span class="fii">10</span><span><strong>Ground Rod</strong></span></div><div class="fbi fin"><span class="fii">11</span><span><strong>Loads</strong></span></div><div class="fbi fin"><span class="fii">12</span><span>Wire Mode to connect</span></div></div><div style="margin-top:7px;padding:6px;background:var(--card-bg);border-radius:4px;font-size:0.68rem;color:var(--dim);"><strong style="color:var(--text);">Safety Rules</strong><br>No fuses = fire risk (NEC 690.9)<br>Ground frames over 50V (NEC 690.41)<br>Disconnect before maintenance (NEC 690.13)<br>Reverse polarity = equipment damage<br>Undersized wire overheats<br>PWM = parallel panels only<br>MPPT = series or parallel panels<br>LiFePO4 requires MPPT controller<br>Lead-Acid requires vented enclosure<br>AFCI required on building-mounted systems (NEC 690.11)<br>Rapid shutdown required on rooftop systems (NEC 690.12)<br>Label all disconnects (NEC 690.17)</div></div></div>
+  <div class="rps" style="padding:4px 8px;"><h3 style="margin-bottom:4px;">Legend</h3><div class="legrow" role="img" aria-label="Solar Panel: blue circle with sun icon"><div class="ldot" style="background:var(--solar);border-radius:50%" aria-hidden="true">&#9728;</div><span>Solar Panel</span></div><div class="legrow" role="img" aria-label="Battery: green rounded-square with battery icon"><div class="ldot" style="background:var(--battery);border-radius:3px" aria-hidden="true">&#128267;</div><span>Battery</span></div><div class="legrow" role="img" aria-label="Charge Controller: cyan square with dial icon"><div class="ldot" style="background:var(--ctrl);border-radius:2px" aria-hidden="true">&#127895;</div><span>Controller</span></div><div class="legrow" role="img" aria-label="Inverter: orange diamond with plug icon"><div class="ldot" style="background:var(--inv);border-radius:2px;transform:rotate(45deg)" aria-hidden="true">&#128268;</div><span>Inverter</span></div><div class="legrow" role="img" aria-label="Load: purple circle with bulb icon"><div class="ldot" style="background:var(--load);border-radius:50%" aria-hidden="true">&#128161;</div><span>Load (appliance)</span></div><div class="legrow" role="img" aria-label="Fuse or Breaker: orange-red square with lightning icon"><div class="ldot" style="background:var(--fuse);border-radius:2px" aria-hidden="true">&#9889;</div><span>Fuse / Breaker</span></div><div class="legrow" role="img" aria-label="Disconnect or Surge Protector: gold hexagon with switch icon"><div class="ldot" style="background:var(--safety);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)" aria-hidden="true">&#128294;</div><span>Disconnect / SPD</span></div><div class="legrow" role="img" aria-label="Ground Rod: green triangle with leaf icon"><div class="ldot" style="background:var(--ground);clip-path:polygon(50% 0%,100% 100%,0% 100%)" aria-hidden="true">&#127807;</div><span>Ground Rod</span></div><div style="border-top:1px solid var(--border);margin:4px 0 3px"></div><div class="legrow" role="img" aria-label="Idle wire: yellow short-dashed line"><svg width="22" height="10" aria-hidden="true" style="flex-shrink:0"><line x1="1" y1="5" x2="21" y2="5" stroke="var(--wire-idle)" stroke-width="2" stroke-dasharray="4,3" stroke-linecap="round"/></svg><span>Wire: idle (unconnected)</span></div><div class="legrow" role="img" aria-label="Live wire: solid cyan line with glow"><svg width="22" height="10" aria-hidden="true" style="flex-shrink:0"><line x1="1" y1="5" x2="21" y2="5" stroke="var(--wire-live)" stroke-width="2" stroke-dasharray="0" stroke-linecap="round"/></svg><span>Wire: live (current flowing)</span></div><div class="legrow" role="img" aria-label="Fault wire: red long-dashed line"><svg width="22" height="10" aria-hidden="true" style="flex-shrink:0"><line x1="1" y1="5" x2="21" y2="5" stroke="var(--wire-fault)" stroke-width="2" stroke-dasharray="8,4" stroke-linecap="round"/></svg><span>Wire: fault (wiring error)</span></div><div class="legrow" role="img" aria-label="Bond wire: green medium-dashed line for chassis grounding"><svg width="22" height="10" aria-hidden="true" style="flex-shrink:0"><line x1="1" y1="5" x2="21" y2="5" stroke="var(--wire-bond)" stroke-width="2" stroke-dasharray="6,3" stroke-linecap="round"/></svg><span>Bond wire (⏫ chassis ground)</span></div><div class="legrow" role="img" aria-label="SPD tap wire: yellow closely-dotted line"><svg width="22" height="10" aria-hidden="true" style="flex-shrink:0"><line x1="1" y1="5" x2="21" y2="5" stroke="var(--wire-spd)" stroke-width="2" stroke-dasharray="2,4" stroke-linecap="round"/></svg><span>SPD tap (parallel, no current)</span></div></div>
+</div>
+</div>
+<script>
+function toggleSbs(id){const el=document.getElementById('sbs-'+id);if(el)el.classList.toggle('collapsed');}
+const SCENS={
+  free:{name:'Free Build',badge:'',context:'',goal:'',reqs:[],check:()=>({met:true,msg:'Free build.'})},
+  cabin:{
+    name:'Off-Grid Cabin',badge:'Beginner',
+    context:'Design a solar system to power a small off-grid cabin for extended periods without grid connection. The system must supply enough energy to run lights, a fan, and keep a phone charged for at least 3 days without sun.',
+    goal:'Power LED lights, ceiling fan, and phone charger for 3+ days of battery autonomy.',
+    reqs:[
+      'At least 1 solar panel sized to cover daily load',
+      '12V battery bank with 3+ days autonomy',
+      'Charge controller (MPPT recommended)',
+      'LED Lights, Ceiling Fan, and Phone Charger loads',
+      'At least 2 fuses (NEC 690.9)',
+      'Disconnect switch (NEC 690.13)',
+      'Ground rod (NEC 690.41)'
+    ],
+    check:(C,M)=>{const ok=C.some(c=>c.type==='solar')&&C.some(c=>c.type==='battery')&&['load-led','load-fan','load-phone'].filter(id=>C.some(c=>c.data.id===id)).length>=2&&C.some(c=>c.type==='fuse')&&C.some(c=>c.type==='disconnect')&&C.some(c=>c.type==='ground');if(!ok)return{met:false,msg:'Missing panels, battery, loads, or safety devices.'};if(M.auto<3)return{met:false,msg:'Autonomy '+M.auto.toFixed(1)+' days -- need 3+.'};return{met:true,msg:'Cabin scenario complete!'};}
+  },
+  school:{
+    name:'School Rooftop',badge:'Intermediate',
+    context:'Design a rooftop solar installation for a school building. The system must power AV equipment and common areas reliably during school hours. Multiple panels require a combiner box, and the higher voltage demands MPPT technology.',
+    goal:'Power a projector, LED lights, and ceiling fan from a multi-panel rooftop array.',
+    reqs:[
+      '3 or more solar panels',
+      'Combiner box (required for 3+ strings, NEC 690.9(B))',
+      'MPPT charge controller (required for high-voltage strings)',
+      'Projector/Display, LED Lights, and Ceiling Fan loads',
+      'Generation must meet or exceed daily consumption',
+      'Fuses, disconnect switch, ground rod, and surge protector'
+    ],
+    check:(C,M)=>{if(C.filter(c=>c.type==='solar').length<3)return{met:false,msg:'Need 3+ panels.'};if(!C.some(c=>c.type==='combiner'))return{met:false,msg:'Combiner box required.'};if(!C.some(c=>c.type==='controller'&&c.data.tech==='MPPT'))return{met:false,msg:'MPPT required.'};if(!C.some(c=>c.data.id==='load-proj'))return{met:false,msg:'Add Projector load.'};if(C.filter(c=>['fuse','disconnect','ground','surge'].includes(c.type)).length<3)return{met:false,msg:'Need 3+ safety devices.'};if(M.ratio<1)return{met:false,msg:'Insufficient solar generation.'};return{met:true,msg:'School rooftop complete!'};}
+  },
+  ev:{
+    name:'EV Charging Station',badge:'Advanced',
+    context:'Design a solar-powered EV charging station capable of Level 2 charging (7.2 kW, 240VAC). This requires a high-voltage 48V battery bank, a large-capacity MPPT controller, a 3kW+ inverter, and a complete NEC-compliant safety stack including AC overcurrent protection.',
+    goal:'Power a Level 2 EV charger (240VAC, 7.2kW) from a solar array with full safety compliance.',
+    reqs:[
+      'EV Charger (L2) load',
+      '48V LiFePO4 battery bank',
+      'MPPT 60A charge controller',
+      '3000W inverter (48V input, 240VAC output)',
+      'AC Breaker on inverter output (NEC 690.8)',
+      'Full safety stack: fuses, disconnect, ground, surge protector',
+      'Solar array sized to meet at least 80% of EV daily load'
+    ],
+    check:(C,M)=>{if(!C.some(c=>c.data.id==='load-ev'))return{met:false,msg:'Add EV Charger load.'};if(!C.some(c=>c.type==='battery'&&c.data.voltage==='48'))return{met:false,msg:'48V battery required.'};if(!C.some(c=>c.type==='inverter'&&parseFloat(c.data.watts)>=3000))return{met:false,msg:'3000W+ inverter required.'};if(!C.some(c=>c.data.id==='mppt60'))return{met:false,msg:'MPPT 60A required.'};if(C.filter(c=>['fuse','disconnect','ground','surge'].includes(c.type)).length<4)return{met:false,msg:'Full safety stack needed.'};if(M.ratio<0.8)return{met:false,msg:'Add more panels.'};return{met:true,msg:'EV charging system complete!'};}
+  }
+};
+let activeScen='free';
+function setScen(id){
+  activeScen=id;
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sb-'+id).classList.add('on');
+  const s=SCENS[id];
+  const panel=document.getElementById('scen-panel');
+  if(!s.goal){panel.classList.remove('show');return;}
+  document.getElementById('sp-title').textContent=s.name;
+  document.getElementById('sp-badge').textContent=s.badge;
+  document.getElementById('sp-body').innerHTML=
+    '<div class="sp-section"><strong>Scenario</strong><span style="color:var(--dim);font-size:0.72rem">'+s.context+'</span></div>'
+    +'<div class="sp-section"><strong>Requirements</strong><ul class="sp-req">'
+    +s.reqs.map(r=>'<li>'+r+'</li>').join('')
+    +'</ul></div>';
+  panel.classList.add('show');
+}
+function dismissScenPanel(){document.getElementById('scen-panel').classList.remove('show');}
+let comps=[],wires=[],nid=1,wireMode=false,wFrom=null,lastM={},wgFaultIds=new Set();
+const TICONS={solar:'S',battery:'B',controller:'C',inverter:'I',load:'L',fuse:'F',disconnect:'D',ground:'G',combiner:'CB',surge:'SP',acbreaker:'ACB'};
+const LICONS={'load-led':'L','load-fan':'F','load-fridge':'Fr','load-phone':'P','load-ev':'EV','load-proj':'Pr'};
+const TCLASS={solar:'ts',battery:'tb',controller:'tc',inverter:'ti',load:'tl',fuse:'tf',disconnect:'td',ground:'tg',combiner:'tcb',surge:'tsp',acbreaker:'tf'};;
+const TCOLOR={solar:'var(--solar)',battery:'var(--battery)',controller:'var(--ctrl)',inverter:'var(--inv)',load:'var(--load)',fuse:'var(--fuse)',disconnect:'var(--safety)',ground:'var(--ground)',combiner:'var(--solar)',surge:'var(--safety)',acbreaker:'var(--fuse)'};
+const GAUGES=[{v:'14awg',l:'14 AWG (15A max)',a:15},{v:'12awg',l:'12 AWG (20A max)',a:20},{v:'10awg',l:'10 AWG (30A max)',a:30},{v:'8awg',l:'8 AWG (40A max)',a:40},{v:'6awg',l:'6 AWG (65A max)',a:65},{v:'4awg',l:'4 AWG (85A max)',a:85}];
+function icon(t,id){const li={solar:'&#9728;',battery:'&#128267;',controller:'&#127895;',inverter:'&#128268;',load:'&#10068;',fuse:'&#9889;',disconnect:'&#128294;',ground:'&#127807;',combiner:'&#128230;',surge:'&#128737;',acbreaker:'&#9889;'};const loadI={'load-led':'&#128161;','load-fan':'&#127744;','load-fridge':'&#129514;','load-phone':'&#128241;','load-ev':'&#128663;','load-proj':'&#128253;'};return t==='load'?(loadI[id]||'&#128268;'):(li[t]||'?');}
+function specs(d){if(d.type==='solar')return d.watts+'W Voc:'+d.voc+'V Isc:'+d.isc+'A';if(d.type==='battery')return d.voltage+'V '+d.capacity+'Ah '+d.chemistry+'<br>DoD:'+d.dod+'% '+d.efficiency+'%eff';if(d.type==='controller')return d.tech+' '+d.amps+'A MaxVoc:'+d.maxvoc+'V';if(d.type==='inverter')return d.watts+'W '+d.inputv+'V->'+d.outputv+'VAC';if(d.type==='load')return d.watts+'W '+d.hours+'h/d='+(d.watts*d.hours)+'Wh/d';if(d.type==='fuse')return d.amps+'A overcurrent';if(d.type==='disconnect')return d.rating+'A disconnect';if(d.type==='ground')return 'Earth ground ('+d.resistance+'ohm)';if(d.type==='combiner')return d.inputs+'-string combiner';if(d.type==='surge')return 'SPD '+d.clamping+'V clamp';if(d.type==='acbreaker')return d.amps+'A '+d.voltage+'VAC NEC 690.8';return'';}
+let dd=null;
+function dstart(e){dd={...e.currentTarget.dataset};e.dataTransfer.effectAllowed='copy';}
+function drop(e){e.preventDefault();if(!dd)return;const r=document.getElementById('cvwrap').getBoundingClientRect();addComp(dd,e.clientX-r.left-54,e.clientY-r.top-34);dd=null;document.getElementById('hint0').style.display='none';}
+document.querySelectorAll('.cc').forEach(c=>{c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();addComp({...c.dataset},50+Math.random()*250,40+Math.random()*150);document.getElementById('hint0').style.display='none';}});});
+function addComp(data,x,y){
+  const id='c'+(nid++);
+  const comp={id,type:data.type,data:{...data},x,y,el:null,gauge:'10awg'};
+  const el=document.createElement('div');
+  el.className='cv '+(TCLASS[data.type]||'');
+  el.id=id;el.style.left=x+'px';el.style.top=y+'px';
+  const ng=['solar','battery','controller','inverter','fuse'].includes(data.type);
+  const gH=ng?'<div class="wgsel"><label>Wire Gauge:</label><select onchange="setG(\''+id+'\',this.value)">'+GAUGES.map(g=>'<option value="'+g.v+'"'+(g.v==='10awg'?' selected':'')+'>'+g.l+'</option>').join('')+'</select></div>':'';
+  const needsBond=['solar','battery','controller','inverter','disconnect'].includes(data.type);
+  const bondPort=needsBond?'<div class="pw"><div class="port pbond" id="'+id+'-bond" data-c="'+id+'" data-p="bond" onclick="portClick(event)" aria-label="Chassis bonding terminal, connect to ground rod" role="button" tabindex="0"></div><span class="plbl" style="color:var(--ground)">⏚</span></div>':'';
+  const isPassThru=['fuse','disconnect','acbreaker'].includes(data.type);
+  const isCtrl=data.type==='controller';
+  // Controllers have 4 ports: PV+ and PV- (panel side) and BAT+ and BAT- (battery side)
+  const pH=data.type==='ground'
+    ?'<div class="ports"><div class="pw"><div class="port pgnd" id="'+id+'-gnd" data-c="'+id+'" data-p="gnd" onclick="portClick(event)" aria-label="Earth ground terminal (GND)" role="button" tabindex="0"></div><span class="plbl">GND</span></div></div>'
+    :isCtrl
+    ?'<div class="ports" style="justify-content:space-around">'
+      +'<div class="pw"><div class="port ppos" id="'+id+'-pvpos" data-c="'+id+'" data-p="pvpos" onclick="portClick(event)" aria-label="Panel positive input (PV+)" role="button" tabindex="0"></div><span class="plbl" style="font-size:0.52rem">PV+</span></div>'
+      +'<div class="pw"><div class="port pneg" id="'+id+'-pvneg" data-c="'+id+'" data-p="pvneg" onclick="portClick(event)" aria-label="Panel negative input (PV-)" role="button" tabindex="0"></div><span class="plbl" style="font-size:0.52rem">PV-</span></div>'
+      +'<div class="pw"><div class="port ppos" id="'+id+'-batpos" data-c="'+id+'" data-p="batpos" onclick="portClick(event)" aria-label="Battery positive output (BAT+)" role="button" tabindex="0"></div><span class="plbl" style="font-size:0.52rem">BAT+</span></div>'
+      +'<div class="pw"><div class="port pneg" id="'+id+'-batneg" data-c="'+id+'" data-p="batneg" onclick="portClick(event)" aria-label="Battery negative output (BAT-)" role="button" tabindex="0"></div><span class="plbl" style="font-size:0.52rem">BAT-</span></div>'
+      +bondPort+'</div>'
+    :'<div class="ports"><div class="pw"><div class="port ppos" id="'+id+'-pos" data-c="'+id+'" data-p="pos" onclick="portClick(event)" aria-label="'+(isPassThru?'IN terminal, current enters from source side':'Positive terminal (+), click in Wire Mode to connect')+'" role="button" tabindex="0"></div><span class="plbl">'+(isPassThru?'IN':'+')+'</span></div><div class="pw"><div class="port pneg" id="'+id+'-neg" data-c="'+id+'" data-p="neg" onclick="portClick(event)" aria-label="'+(isPassThru?'OUT terminal, current exits toward load side':'Negative terminal (-), click in Wire Mode to connect')+'" role="button" tabindex="0"></div><span class="plbl">'+(isPassThru?'OUT':'-')+'</span></div>'+bondPort+'</div>';
+  el.innerHTML='<button class="cvdel" onclick="delComp(\''+id+'\')" aria-label="Remove">x</button><div class="cvh"><span class="cvi">'+icon(data.type,data.id)+'</span><span class="cvn" style="color:'+(TCOLOR[data.type]||'var(--text)')+'">'+data.name+'</span></div><div class="cvs">'+specs(data)+'</div>'+gH+pH;
+  makeDrag(el);document.getElementById('cvwrap').appendChild(el);comp.el=el;comps.push(comp);
+}
+function setG(id,v){const c=comps.find(x=>x.id===id);if(c)c.gauge=v;}
+function delComp(id){wires=wires.filter(w=>w.a!==id&&w.b!==id);const i=comps.findIndex(c=>c.id===id);if(i>=0){comps[i].el.remove();comps.splice(i,1);}drawWires();if(comps.length===0)document.getElementById('hint0').style.display='block';}
+function makeDrag(el){
+  let ox,oy,sx,sy;
+  el.addEventListener('mousedown',e=>{if(wireMode||e.target.classList.contains('port')||e.target.classList.contains('cvdel')||e.target.tagName==='SELECT')return;e.preventDefault();sx=el.offsetLeft;sy=el.offsetTop;ox=e.clientX;oy=e.clientY;const mv=me=>{el.style.left=(sx+me.clientX-ox)+'px';el.style.top=(sy+me.clientY-oy)+'px';drawWires();};const up=()=>{const c=comps.find(c=>c.id===el.id);if(c){c.x=parseInt(el.style.left);c.y=parseInt(el.style.top);}document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);};document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});
+  el.addEventListener('touchstart',e=>{if(wireMode||e.target.classList.contains('port')||e.target.classList.contains('cvdel'))return;const t=e.touches[0];sx=el.offsetLeft;sy=el.offsetTop;ox=t.clientX;oy=t.clientY;const mv=te=>{const tt=te.touches[0];el.style.left=(sx+tt.clientX-ox)+'px';el.style.top=(sy+tt.clientY-oy)+'px';drawWires();te.preventDefault();};const up=()=>{document.removeEventListener('touchmove',mv);document.removeEventListener('touchend',up);};document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',up);},{passive:true});
+}
+function toggleWire(){wireMode=!wireMode;const b=document.getElementById('bwire');b.setAttribute('aria-pressed',wireMode);b.innerHTML=wireMode?'&#9986; Exit Wiring':'&#128268; Wire Mode';b.classList.toggle('on',wireMode);document.getElementById('cvwrap').style.cursor=wireMode?'crosshair':'default';document.getElementById('wsvg').classList.toggle('wire-mode',wireMode);if(!wireMode)cancelWire();updateLiveness();drawWires();}
+function portClick(e){if(!wireMode)return;e.stopPropagation();const portEl=e.currentTarget,cid=portEl.dataset.c,port=portEl.dataset.p;if(!wFrom){wFrom={cid,port,el:portEl};portEl.style.transform='scale(1.8)';portEl.style.boxShadow='0 0 10px cyan';document.addEventListener('mousemove',tmpMove);return;}if(wFrom.cid===cid){cancelWire();return;}const dup=wires.find(w=>(w.a===wFrom.cid&&w.ap===wFrom.port&&w.b===cid&&w.bp===port)||(w.b===wFrom.cid&&w.bp===wFrom.port&&w.a===cid&&w.ap===port));if(!dup){const ca=comps.find(x=>x.id===wFrom.cid),cb=comps.find(x=>x.id===cid);const POWER_SOURCES=['solar','battery'];
+        const PASSTHRU=['fuse','disconnect','acbreaker'];
+        // Valid chassis bond: bond port <-> gnd port
+        const isBond=(wFrom.port==='bond'&&port==='gnd')||(wFrom.port==='gnd'&&port==='bond');
+        // POLARITY FAULT 1: pos->pos between two independent voltage sources
+        // (panel or battery). Two sources joined at positive create a short circuit.
+        const pf_pospos=wFrom.port==='pos'&&port==='pos'&&ca&&cb&&
+          POWER_SOURCES.includes(ca.type)&&POWER_SOURCES.includes(cb.type);
+        // POLARITY FAULT 2: a passthru device (fuse/disconnect) connected to the
+        // NEGATIVE terminal of a voltage source (solar/battery).
+        // This puts the positive conductor into the negative terminal, which would
+        // reverse-bias the source.
+        // Exception: source(-) -> passthru(IN/pos) is the legitimate discharge/return path.
+        const NEG_PORTS=['neg','pvneg','batneg'];
+        const POS_PORTS=['pos','pvpos','batpos'];
+        const pf_cross=ca&&cb&&!isBond&&(
+          // passthru(any) -> source negative terminal
+          (PASSTHRU.includes(ca.type)&&POWER_SOURCES.includes(cb.type)&&NEG_PORTS.includes(port))||
+          // source negative -> passthru OUTPUT (not input)
+          (POWER_SOURCES.includes(ca.type)&&NEG_PORTS.includes(wFrom.port)&&PASSTHRU.includes(cb.type)&&!POS_PORTS.includes(port))
+        );
+        const pf_negneg=false;
+        const pf=pf_pospos||pf_cross;
+
+        // Ground fault: live conductor (+/-) wired to earth ground OR bond port wired to live conductor
+        const LIVE_PORTS=['pos','neg','pvpos','pvneg','batpos','batneg'];
+        const gf=(!isBond)&&(
+          LIVE_PORTS.includes(wFrom.port)&&port==='gnd'||
+          LIVE_PORTS.includes(port)&&wFrom.port==='gnd'||
+          (wFrom.port==='bond'&&LIVE_PORTS.includes(port))||
+          (port==='bond'&&LIVE_PORTS.includes(wFrom.port))
+        );
+        const hz=pf?'pol':gf?'gnd':isBond?'bond':null;
+        wires.push({id:'w'+(nid++),a:wFrom.cid,ap:wFrom.port,b:cid,bp:port,hz});
+        portEl.classList.add('used');wFrom.el.classList.add('used');
+        if(hz==='pol'||hz==='gnd'){const pr1=wFrom.el.getBoundingClientRect(),pr2=portEl.getBoundingClientRect(),wr=document.getElementById('cvwrap').getBoundingClientRect();flashSpark((pr1.left+pr1.width/2+pr2.left+pr2.width/2)/2-wr.left,(pr1.top+pr1.height/2+pr2.top+pr2.height/2)/2-wr.top);}
+        if(pf){
+          [ca?.el,cb?.el].forEach(x=>{if(x){x.classList.add('fault');setTimeout(()=>x.classList.remove('fault'),2200);}});
+          let polMsg='Polarity error between '+ca.data.name+' and '+cb.data.name+'. ';
+          if(pf_pospos)polMsg+='Two positive (+) ports connected together. Positive conductors must flow INTO the next component, not join another positive.';
+          else polMsg+='A positive-rail conductor is connected to a negative (-) port, or vice versa. Current would flow backward through this component, destroying it. '+(PASSTHRU.includes(ca.type)?'The '+ca.data.name+' OUT port carries positive current onward -- connect it to the (+) port of the next component.':PASSTHRU.includes(cb.type)?'The '+cb.data.name+' OUT port carries positive current onward -- connect it to the (+) port of the next component.':'Check which port on each component is the input and which is the output.');
+          doHint('Polarity Error!',polMsg,'Correct series path: Panel(+)→Fuse(IN→OUT)→Controller(+) and Controller(-)→Battery(+), then Battery(-)→Fuse(IN→OUT)→Disconnect(IN→OUT)→Load(+) and Load(-)→Panel(-).');
+        }
+        if(gf){[ca?.el,cb?.el].forEach(x=>{if(x){x.classList.add('fault');setTimeout(()=>x.classList.remove('fault'),2200);}});doHint('Ground Fault!','You connected a live DC conductor directly to the earth ground rod. This short-circuits current to earth, blows fuses, and can cause fire or electrocution. The ground rod should connect to equipment frames and enclosures — not to the positive or negative current-carrying conductors.','The ground rod terminal connects to metal chassis/frames only. Use the + and - ports to carry current between components.');}}cancelWire();updateLiveness();drawWires();}
+function cancelWire(){if(wFrom){wFrom.el.style.transform='';wFrom.el.style.boxShadow='';}wFrom=null;rmTmp();document.removeEventListener('mousemove',tmpMove);}
+function tmpMove(e){if(!wFrom)return;const pr=wFrom.el.getBoundingClientRect(),wr=document.getElementById('cvwrap').getBoundingClientRect();const x1=pr.left+pr.width/2-wr.left,y1=pr.top+pr.height/2-wr.top;rmTmp();const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('class','wt');p.setAttribute('id','twire');const cx=(x1+e.clientX-wr.left)/2;p.setAttribute('d','M'+x1+','+y1+' C'+cx+','+y1+' '+cx+','+(e.clientY-wr.top)+' '+(e.clientX-wr.left)+','+(e.clientY-wr.top));document.getElementById('wsvg').appendChild(p);}
+function rmTmp(){const t=document.getElementById('twire');if(t)t.remove();}
+function ptCenter(cid,port){const el=document.getElementById(cid+'-'+port);if(!el)return null;const pr=el.getBoundingClientRect(),wr=document.getElementById('cvwrap').getBoundingClientRect();return{x:pr.left+pr.width/2-wr.left,y:pr.top+pr.height/2-wr.top};}
+// Recompute w.live for every wire based on actual circuit connectivity.
+// A wire is live only when a complete closed loop exists:
+//   CHARGING LOOP: panel -> [fuse] -> controller(PV+) ... controller(BAT+) -> battery -> controller(BAT-) or panel(-)
+//   DISCHARGE LOOP: battery -> [fuse] -> [disconnect] -> load -> battery(-)
+// We use a simple reachability check: can we trace a path from battery(+)
+// through non-fault wires back to battery(-)?
+function updateLiveness(){
+  // Quick component presence check first
+  const panels=comps.filter(x=>x.type==='solar');
+  const bats=comps.filter(x=>x.type==='battery');
+  const ctrls=comps.filter(x=>x.type==='controller');
+  if(!panels.length||!bats.length||!ctrls.length){
+    wires.forEach(w=>w.live=false);
+    return;
+  }
+
+  // Build adjacency: for each component, which components is it connected to
+  // via non-fault, non-SPD wires?
+  const goodWires=wires.filter(w=>!w.hz&&
+    !((comps.find(x=>x.id===w.a)?.type==='surge')||(comps.find(x=>x.id===w.b)?.type==='surge'))
+  );
+
+  // Check charging loop: is there a path from any panel to any battery
+  // passing through a controller?
+  function canReach(startIds, targetTypes, visited=new Set()){
+    const queue=[...startIds];
+    while(queue.length){
+      const id=queue.shift();
+      if(visited.has(id))continue;
+      visited.add(id);
+      const comp=comps.find(x=>x.id===id);
+      if(comp&&targetTypes.includes(comp.type))return true;
+      // Find neighbors via good wires
+      goodWires.forEach(w=>{
+        if(w.a===id&&!visited.has(w.b))queue.push(w.b);
+        if(w.b===id&&!visited.has(w.a))queue.push(w.a);
+      });
+    }
+    return false;
+  }
+
+  const panelIds=panels.map(x=>x.id);
+  const batIds=bats.map(x=>x.id);
+  const ctrlIds=ctrls.map(x=>x.id);
+
+  // Charging loop: panel reachable to controller AND controller reachable to battery
+  const panelToCtrl=canReach(panelIds,['controller']);
+  const ctrlToBat=canReach(ctrlIds,['battery']);
+  const chargingLoopClosed=panelToCtrl&&ctrlToBat;
+
+  // Discharge loop: battery reachable to a load AND load reachable back to battery
+  // (proxy: battery connects to battery via at least one load in the path)
+  const loads=comps.filter(x=>x.type==='load');
+  let dischargeLoopClosed=false;
+  if(loads.length&&chargingLoopClosed){
+    // Check if any load is reachable from battery AND connects back to battery
+    dischargeLoopClosed=loads.some(load=>{
+      const fromBat=canReach(batIds,['load']);
+      // Check if battery is reachable from this load (return path exists)
+      const returnPath=canReach([load.id],['battery']);
+      return fromBat&&returnPath;
+    });
+  }
+
+  // System is live if at minimum the charging loop is closed
+  const sysLive=chargingLoopClosed;
+
+  wires.forEach(w=>{
+    const ca=comps.find(x=>x.id===w.a);
+    const cb=comps.find(x=>x.id===w.b);
+    const isSPDwire=(ca&&ca.type==='surge')||(cb&&cb.type==='surge');
+    // Discharge-side wires (to/from loads, disconnect, second fuse) only live
+    // when the discharge loop is also closed
+    const isLoadSide=(ca&&(ca.type==='load'||ca.type==='disconnect'))||
+                     (cb&&(cb.type==='load'||cb.type==='disconnect'));
+    const shouldBeLive=sysLive&&!w.hz&&!isSPDwire&&(!isLoadSide||dischargeLoopClosed);
+    w.live=shouldBeLive;
+  });
+}
+
+function drawWires(){
+  const svg=document.getElementById('wsvg');
+  svg.querySelectorAll('.wi,.wl,.wf,.wb,.whit,.flow-grp').forEach(w=>w.remove());
+  wires.forEach(w=>{
+    const p1=ptCenter(w.a,w.ap),p2=ptCenter(w.b,w.bp);if(!p1||!p2)return;
+    const d='M'+p1.x+','+p1.y+' C'+((p1.x+p2.x)/2)+','+p1.y+' '+((p1.x+p2.x)/2)+','+p2.y+' '+p2.x+','+p2.y;
+    const isFault=w.hz==='pol'||w.hz==='gnd';
+    const isBondWire=w.hz==='bond';          // always draw as green dashed
+    const isBondAnimated=w.hz==='bond'&&w.live; // only animate dots when live
+    const isSPD=(comps.find(x=>x.id===w.a)?.type==='surge'||comps.find(x=>x.id===w.b)?.type==='surge')&&!isFault;
+    // Negative-rail wires: PV- and BAT- carry return current (opposite direction).
+    // Show them as idle (no flow dots) to avoid misleading current direction.
+    // Only suppress animation on controller reference conductors (PV- and BAT-)
+    // Load return wires (neg->neg to battery) DO animate -- they carry discharge current
+    const isNegRail=!isFault&&!isBondWire&&!isSPD&&
+      (w.ap==='pvneg'||w.ap==='batneg'||w.bp==='pvneg'||w.bp==='batneg');
+    const isLive=w.live&&!isFault&&!isBondWire&&!isSPD&&!isNegRail;
+
+    // Visible wire
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    // Negative-rail wires show as a dimmer idle style so students can distinguish them
+    path.setAttribute('class',isFault?'wf':isBondWire?'wb':isSPD?'wspd':isLive?'wl':'wi');
+    if(isNegRail&&w.live)path.style.opacity='0.45';
+    path.setAttribute('d',d);
+    svg.appendChild(path);
+
+    // Flow animation — travelling dot along live and bond wires
+    if(isLive||isBondAnimated){
+      const grp=document.createElementNS('http://www.w3.org/2000/svg','g');
+      grp.setAttribute('class','flow-grp');
+      // Use 2 staggered dots for a smoother flow effect
+      [0,0.5].forEach(offset=>{
+        const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        dot.setAttribute('r','3.5');
+        dot.setAttribute('class',isBondAnimated?'flow-dot-bond':'flow-dot');
+        const anim=document.createElementNS('http://www.w3.org/2000/svg','animateMotion');
+        anim.setAttribute('dur',isBondAnimated?'2.4s':'1.6s');
+        anim.setAttribute('repeatCount','indefinite');
+        anim.setAttribute('begin',offset+'s');
+        const mp=document.createElementNS('http://www.w3.org/2000/svg','mpath');
+        // animateMotion with mpath needs a referenced path — use href on a defs path
+        // Instead, embed path directly in animateMotion
+        anim.setAttribute('path',d);
+        anim.setAttribute('calcMode','linear');
+        dot.appendChild(anim);
+        grp.appendChild(dot);
+      });
+      svg.appendChild(grp);
+    }
+
+    // Fault wire: add persistent spark burst at midpoint
+    if(isFault&&!isBondWire){
+      spawnSparkBurst(svg,p1,p2,'spark-r',true);
+    }
+
+    // Hit target
+    const hit=document.createElementNS('http://www.w3.org/2000/svg','path');
+    hit.setAttribute('class','whit');
+    hit.setAttribute('d',d);
+    hit.setAttribute('data-wid',w.id);
+    hit.style.cssText='stroke:transparent;stroke-width:12;fill:none;pointer-events:stroke;cursor:pointer;';
+    hit.addEventListener('click',e=>{if(wireMode){e.stopPropagation();deleteWire(w.id);}});
+    hit.addEventListener('mouseenter',e=>{if(wireMode)path.style.opacity='0.45';});
+    hit.addEventListener('mouseleave',e=>{path.style.opacity='';});
+    svg.appendChild(hit);
+  });
+}
+
+// Spawn a burst of spark lines radiating from midpoint of a fault wire.
+// persistent=true keeps them repeating; false = one-shot fade.
+function spawnSparkBurst(svg,p1,p2,cls,persistent){
+  const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+  const grp=document.createElementNS('http://www.w3.org/2000/svg','g');
+  grp.setAttribute('class','flow-grp'); // same class so drawWires cleans them up
+  if(!persistent){grp.setAttribute('class','flow-grp spark-group');}
+
+  const angles=[0,45,90,135,180,225,270,315];
+  angles.forEach((a,i)=>{
+    const rad=a*Math.PI/180;
+    const len=6+Math.random()*6;
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('class',cls);
+    line.setAttribute('x1',mx); line.setAttribute('y1',my);
+    line.setAttribute('x2',mx+Math.cos(rad)*len);
+    line.setAttribute('y2',my+Math.sin(rad)*len);
+    if(persistent){
+      // Animate each spark line flickering
+      const anim=document.createElementNS('http://www.w3.org/2000/svg','animate');
+      anim.setAttribute('attributeName','opacity');
+      anim.setAttribute('values','1;0;1;0.6;0');
+      anim.setAttribute('dur',(0.4+i*0.07)+'s');
+      anim.setAttribute('repeatCount','indefinite');
+      anim.setAttribute('begin',(i*0.05)+'s');
+      line.appendChild(anim);
+      // Also animate length
+      const anim2=document.createElementNS('http://www.w3.org/2000/svg','animate');
+      anim2.setAttribute('attributeName','x2');
+      anim2.setAttribute('values',mx+';'+(mx+Math.cos(rad)*(len*1.8))+';'+mx);
+      anim2.setAttribute('dur',(0.4+i*0.07)+'s');
+      anim2.setAttribute('repeatCount','indefinite');
+      anim2.setAttribute('begin',(i*0.05)+'s');
+      line.appendChild(anim2);
+      const anim3=document.createElementNS('http://www.w3.org/2000/svg','animate');
+      anim3.setAttribute('attributeName','y2');
+      anim3.setAttribute('values',my+';'+(my+Math.sin(rad)*(len*1.8))+';'+my);
+      anim3.setAttribute('dur',(0.4+i*0.07)+'s');
+      anim3.setAttribute('repeatCount','indefinite');
+      anim3.setAttribute('begin',(i*0.05)+'s');
+      line.appendChild(anim3);
+    }
+    grp.appendChild(line);
+  });
+  svg.appendChild(grp);
+}
+
+// One-shot spark burst at a specific canvas point (for new fault wire creation)
+function flashSpark(x,y){
+  const wr=document.getElementById('cvwrap').getBoundingClientRect();
+  const svg=document.getElementById('wsvg');
+  const grp=document.createElementNS('http://www.w3.org/2000/svg','g');
+  grp.setAttribute('class','spark-group flow-grp');
+  const angles=[0,30,60,90,120,150,180,210,240,270,300,330];
+  angles.forEach(a=>{
+    const rad=a*Math.PI/180;
+    const len=8+Math.random()*10;
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('class','spark');
+    line.setAttribute('x1',x);line.setAttribute('y1',y);
+    line.setAttribute('x2',x+Math.cos(rad)*len);
+    line.setAttribute('y2',y+Math.sin(rad)*len);
+    grp.appendChild(line);
+  });
+  svg.appendChild(grp);
+  setTimeout(()=>grp.remove(),600);
+}
+function deleteWire(wid){
+  const idx=wires.findIndex(w=>w.id===wid);
+  if(idx<0)return;
+  const w=wires[idx];
+  // Free both ports
+  [document.getElementById(w.a+'-'+w.ap), document.getElementById(w.b+'-'+w.bp)]
+    .forEach(p=>{if(p){
+      // Only un-mark if no other wire uses this port
+      const stillUsed=wires.some((x,i)=>i!==idx&&(
+        (x.a===w.a&&x.ap===w.ap)||(x.b===w.a&&x.bp===w.ap)||
+        (x.a===w.b&&x.ap===w.bp)||(x.b===w.b&&x.bp===w.bp)
+      ));
+      if(!stillUsed)p.classList.remove('used');
+    }});
+  wires.splice(idx,1);
+  // Recompute liveness and clear stale fire/on-fire states
+  updateLiveness();
+  comps.forEach(comp=>{
+    // Only keep on-fire if this component is still part of a fault wire
+    const stillFault=wires.some(fw=>
+      (fw.hz==='pol'||fw.hz==='gnd')&&(fw.a===comp.id||fw.b===comp.id)
+    );
+    const stillWgFault=wgFaultIds&&wgFaultIds.has(comp.id);
+    if(!stillFault&&!stillWgFault)comp.el.classList.remove('on-fire');
+  });
+  drawWires();
+}
+function doHint(title,body,tip){document.getElementById('htitle').textContent=title;document.getElementById('hbody').textContent=body;document.getElementById('htip').textContent='Tip: '+tip;document.getElementById('hmod').classList.add('show');}
+function closeHint(){document.getElementById('hmod').classList.remove('show');}
+function showHint(){const p=comps.filter(c=>c.type==='solar'),b=comps.filter(c=>c.type==='battery'),ctrl=comps.filter(c=>c.type==='controller'),f=comps.filter(c=>c.type==='fuse'),g=comps.filter(c=>c.type==='ground'),d=comps.filter(c=>c.type==='disconnect'),inv=comps.filter(c=>c.type==='inverter'),l=comps.filter(c=>c.type==='load');if(comps.length===0)doHint('Getting Started','Drag a Solar Panel onto the canvas.','The 100W panel is a great starting choice.');else if(p.length===0)doHint('Add Solar Panels','No panels yet.','Multiple panels can wire in series (adds voltage) or parallel (adds current).');else if(ctrl.length===0)doHint('Add Charge Controller','Without one, raw panel voltage will overcharge and destroy the battery.','MPPT harvests up to 30% more energy than PWM.');else if(f.length===0)doHint('Add Fuses','NEC 690.9 requires fuses on all conductors.','Add one between panels and controller, another between battery and loads.');else if(b.length===0)doHint('Add a Battery','No battery means no power at night.','LiFePO4: 80% DoD, 97% efficiency, 2000+ cycles.');else if(g.length===0)doHint('Add Ground Rod','Without grounding a fault puts voltage on metal frames.','Ground rod creates safe fault current path to earth.');else if(d.length===0)doHint('Add Disconnect Switch','NEC 690.13 requires manual disconnect.','Place between battery and loads.');else if(l.length===0)doHint('Add Loads','Add appliances to evaluate energy balance.','Daily Wh = watts x hours/day.');else if(inv.length===0&&l.some(x=>parseFloat(x.data.voltage)>=120))doHint('Add Inverter','AC loads need an inverter.','Match inverter input voltage to battery bank voltage.');else doHint('Ready to Analyze!','Click Analyze for score and safety audit.','Check Feedback tab for improvements.');}
+function clearAll(){comps.forEach(c=>{c.el.classList.remove('on-fire');c.el.remove();});comps=[];wires=[];document.getElementById('wsvg').querySelectorAll('.wi,.wl,.wf,.flow-grp').forEach(w=>w.remove());document.getElementById('hint0').style.display='block';resetUI();}
+function showTab(n){['metrics','feedback','guide'].forEach(t=>{document.getElementById('tc-'+t).style.display=t===n?'block':'none';document.getElementById('t-'+t).classList.toggle('on',t===n);});}
+function analyze(){
+  const P=comps.filter(c=>c.type==='solar'),B=comps.filter(c=>c.type==='battery'),
+    C=comps.filter(c=>c.type==='controller'),I=comps.filter(c=>c.type==='inverter'),
+    L=comps.filter(c=>c.type==='load'),F=comps.filter(c=>c.type==='fuse'),
+    D=comps.filter(c=>c.type==='disconnect'),G=comps.filter(c=>c.type==='ground'),
+    SP=comps.filter(c=>c.type==='surge'),CB=comps.filter(c=>c.type==='combiner'),ACB=comps.filter(c=>c.type==='acbreaker');
+  const fb=[];let score=100;
+  const panW=P.reduce((s,p)=>s+parseFloat(p.data.watts),0);
+  const avgVoc=P.length?P.reduce((s,p)=>s+parseFloat(p.data.voc),0)/P.length:0;
+  const dailyGen=panW*5;
+  const batV=B.length?parseFloat(B[0].data.voltage):0;
+  const batCapAh=B.reduce((s,b)=>s+parseFloat(b.data.capacity),0);
+  const batDod=B.length?parseFloat(B[0].data.dod)/100:0.5;
+  const batEff=B.length?parseFloat(B[0].data.efficiency)/100:0.85;
+  const usableWh=batCapAh*batV*batDod;
+  const ctrl=C[0]?.data,inv=I[0]?.data;
+  const ctrlEff=ctrl?parseFloat(ctrl.efficiency)/100:1;
+  const invEff=inv?parseFloat(inv.efficiency)/100:1;
+  const dailyLoad=L.reduce((s,l)=>s+parseFloat(l.data.watts)*parseFloat(l.data.hours),0);
+  const peakLoad=L.reduce((s,l)=>s+parseFloat(l.data.watts),0);
+  const ratio=dailyLoad>0?dailyGen/dailyLoad:0;
+  const auto=dailyLoad>0&&usableWh>0?usableWh/dailyLoad:0;
+  const sysV=batV||(P.length>0?avgVoc:0);
+  const wgIssues=[];
+  comps.filter(c=>['solar','battery','controller','inverter','fuse'].includes(c.type)).forEach(comp=>{
+    const g=GAUGES.find(x=>x.v===comp.gauge);if(!g)return;
+    let exp=0;
+    if(comp.type==='solar')exp=parseFloat(comp.data.isc||0)*1.25;
+    else if(comp.type==='battery')exp=panW/(batV||12)*1.25;
+    else if(comp.type==='controller')exp=parseFloat(comp.data.amps||0);
+    else if(comp.type==='inverter')exp=parseFloat(comp.data.watts||0)/(batV||12)*1.25;
+    else if(comp.type==='fuse')exp=parseFloat(comp.data.amps||0);
+    if(exp>g.a)wgIssues.push({n:comp.data.name,exp:exp.toFixed(0),max:g.a,g:g.l});
+  });
+  // Fuse-to-wire cross-check: fuse rating must NOT exceed wire ampacity.
+  // A fuse rated higher than the wire it protects defeats overcurrent protection.
+  const fuseWireIssues=[];
+  F.forEach(fuse=>{
+    const fuseA=parseFloat(fuse.data.amps);
+    const g=GAUGES.find(x=>x.v===fuse.gauge);
+    if(g&&fuseA>g.a){
+      fuseWireIssues.push({fuse:fuse.data.name,fuseA,wireA:g.a,wire:g.l});
+    }
+  });
+  const polFault=wires.some(w=>w.hz==='pol');
+  if(polFault){
+    fb.push({t:'fhz',i:'!',m:'POLARITY ERROR: Incorrect port connection between power components. This includes (+) to (+), (-) to (-), or a positive-rail conductor arriving at a negative (-) port. In a real system this causes immediate equipment destruction and fire. Check the Feedback: current must flow (+) through each component in sequence and return via the (-) path.'});
+    score-=40;
+  }
+  const gndFault=wires.some(w=>w.hz==='gnd');
+  if(gndFault){fb.push({t:'fhz',i:'!',m:'GROUND FAULT: A live DC conductor (+/-) is wired directly to the earth ground rod. This short-circuits current to earth, blows fuses, and risks fire and electrocution. Ground rods connect to equipment chassis/frames only, never to current-carrying conductors.'});score-=35;}
+  wgIssues.forEach(x=>{fb.push({t:'fhz',i:'!',m:'FIRE HAZARD: Undersized wire on '+x.n+': '+x.g+' rated '+x.max+'A but ~'+x.exp+'A expected.'});score-=15;});
+  fuseWireIssues.forEach(x=>{fb.push({t:'fhz',i:'!',m:'PROTECTION DEFEAT: '+x.fuse+' ('+x.fuseA+'A) is rated HIGHER than the '+x.wire+' wire it protects ('+x.wireA+'A max). The fuse will not blow before the wire overheats and catches fire. Use a fuse rated at or below the wire ampacity. NEC 690.9.'});score-=20;});
+  if(B.length>0&&F.length===0){fb.push({t:'fhz',i:'!',m:'ARC FLASH RISK: Batteries can deliver thousands of amps into a short. Without fuses this causes burns and fire.'});score-=10;}
+  if(P.length===0){fb.push({t:'fbd',i:'x',m:'No solar panels. Add at least one.'});score-=40;}
+  else{
+    fb.push({t:'fok',i:'v',m:P.length+' panel(s): '+panW+'W, ~'+dailyGen.toFixed(0)+' Wh/day (5 peak sun hrs).'});
+    if(P.length>2&&CB.length===0){fb.push({t:'fwn',i:'!',m:P.length+' panels without a combiner box. NEC 690.9(B): 3+ parallel strings each need their own string fuse to prevent back-feed through a shorted panel. Use a combiner box with per-string fusing.'});score-=8;}
+    const effs=P.map(p=>parseFloat(p.data.efficiency));
+    if(P.length>1&&Math.max(...effs)-Math.min(...effs)>3){fb.push({t:'fwn',i:'!',m:'Mismatched efficiencies ('+Math.min(...effs)+'%-'+Math.max(...effs)+'%). Weakest panel limits the string.'});score-=5;}
+  }
+  if(C.length===0){fb.push({t:'fhz',i:'!',m:'No charge controller! Panels will overcharge and destroy the battery.'});score-=30;}
+  else{
+    if(ctrl.tech==='MPPT')fb.push({t:'fok',i:'v',m:'MPPT controller: up to 30% more energy than PWM.'});
+    else{fb.push({t:'fwn',i:'!',m:'PWM clips panel voltage, wasting energy. Consider MPPT instead.'});score-=8;}
+    if(P.length>0&&avgVoc>parseFloat(ctrl.maxvoc)){fb.push({t:'fhz',i:'!',m:'OVERVOLTAGE: Panel Voc ('+avgVoc.toFixed(1)+'V) exceeds controller max ('+ctrl.maxvoc+'V). Will destroy controller. NEC 690.7.'});score-=25;}
+    else if(P.length>0)fb.push({t:'fok',i:'v',m:'Voltage OK: Voc '+avgVoc.toFixed(1)+'V within controller limit '+ctrl.maxvoc+'V. NEC 690.7 pass.'});
+    const pA=panW/(batV||12);if(pA>parseFloat(ctrl.amps)){fb.push({t:'fbd',i:'x',m:'Controller overloaded: '+pA.toFixed(1)+'A > '+ctrl.amps+'A max.'});score-=15;}
+
+    // 3A: PWM + multiple panels -- series wiring raises Voc above battery voltage
+    if(ctrl.tech==='PWM'&&P.length>1&&batV>0){
+      const anyPanelOverV=P.some(p=>parseFloat(p.data.voc)>batV*1.15);
+      if(anyPanelOverV){
+        fb.push({t:'fhz',i:'!',m:'PWM + SERIES PANEL RISK: With a PWM controller, panels must be wired IN PARALLEL so their voltage matches the battery bank voltage. Wiring them in series multiplies Voc (e.g. two 22.5V panels in series = 45V into a 12V battery), which will destroy the PWM controller. Only MPPT controllers can accept high-voltage series strings.'});
+        score-=20;
+      }
+    }
+
+    // 3C: Controller output wired directly to a load (must go to battery first)
+    C.forEach(ctrl_comp=>{
+      const ctrlOutWires=wires.filter(w=>
+        (w.a===ctrl_comp.id&&(w.ap==='batpos'||w.ap==='pos'))||
+        (w.b===ctrl_comp.id&&(w.bp==='batpos'||w.bp==='pos'))
+      );
+      ctrlOutWires.forEach(w=>{
+        const neighborId=w.a===ctrl_comp.id?w.b:w.a;
+        const neighbor=comps.find(x=>x.id===neighborId);
+        if(neighbor&&neighbor.type==='load'){
+          fb.push({t:'fhz',i:'!',m:'WIRING ERROR: Charge controller output connected directly to load '+neighbor.data.name+'. The controller output must connect to the BATTERY first. The battery acts as a voltage buffer -- without it, the controller cannot regulate voltage and the load receives unstable power that damages electronics.'});
+          score-=20;
+        }
+      });
+    });
+  }
+
+  // 3B: Panel wired directly to battery with no controller
+  if(P.length>0&&C.length===0&&B.length>0){
+    const panelIds=new Set(P.map(p=>p.id));
+    const batIds=new Set(B.map(b=>b.id));
+    const panelToBat=wires.some(w=>
+      (panelIds.has(w.a)&&batIds.has(w.b))||(panelIds.has(w.b)&&batIds.has(w.a))
+    );
+    if(panelToBat){
+      fb.push({t:'fhz',i:'!',m:'DIRECT PANEL-TO-BATTERY CONNECTION: Panels are wired directly to the battery with no charge controller. The panel Voc ('+avgVoc.toFixed(1)+'V) will overcharge and permanently damage the battery. A charge controller is always required between panels and battery.'});
+      score-=30;
+    }
+  }
+
+  // 3D: Inverter should be downstream of disconnect
+  if(I.length>0&&D.length>0){
+    I.forEach(inv_comp=>{
+      const invNeighbors=wires
+        .filter(w=>w.a===inv_comp.id||w.b===inv_comp.id)
+        .map(w=>comps.find(x=>x.id===(w.a===inv_comp.id?w.b:w.a)))
+        .filter(Boolean);
+      const neighborTypes=invNeighbors.map(n=>n.type);
+      if(neighborTypes.includes('battery')&&!neighborTypes.includes('disconnect')&&!neighborTypes.includes('fuse')){
+        fb.push({t:'fwn',i:'!',m:'Inverter placement: Inverter connects directly to the battery without a disconnect or fuse between them. Place the disconnect switch between the battery and the inverter so the inverter can be isolated in an emergency (NEC 690.13).'});
+        score-=10;
+      }
+    });
+  }
+  if(B.length===0){fb.push({t:'fbd',i:'x',m:'No battery -- no power at night or on cloudy days.'});score-=25;}
+  else{
+    // 2A: Mixed chemistry check
+    const chemistries=[...new Set(B.map(b=>b.data.chemistry))];
+    if(chemistries.length>1){
+      fb.push({t:'fhz',i:'!',m:'MIXED BATTERY CHEMISTRIES: '+chemistries.join(' + ')+' batteries in the same bank. Each chemistry has a different charge voltage profile -- they will fight each other during charging, causing overcharge in one and undercharge in the other. This degrades both batteries rapidly and risks thermal runaway. Use only one chemistry per bank.'});
+      score-=30;
+    }
+
+    // 2B: Mixed voltage check
+    const voltages=[...new Set(B.map(b=>b.data.voltage))];
+    if(voltages.length>1){
+      fb.push({t:'fhz',i:'!',m:'MIXED BATTERY VOLTAGES: '+voltages.join('V + ')+'V batteries wired in parallel. Different voltages cause uncontrolled cross-current between batteries, destroying both. All parallel batteries must have the same nominal voltage and ideally the same capacity and age.'});
+      score-=30;
+    }
+
+    const ch=B[0].data.chemistry;
+    // 2C: More than 4 in parallel
+    if(B.length>4){
+      fb.push({t:'fwn',i:'!',m:'More than 4 batteries in parallel ('+B.length+' installed). Resistance imbalance between long and short cable runs causes unequal charging -- batteries closest to the controller charge faster and age sooner. Use a bus bar with equal-length cables to all terminals, and consider a battery balancer.'});
+      score-=8;
+    }
+
+    // 2D: LiFePO4 + PWM incompatibility
+    if(ch==='LiFePO4'&&ctrl&&ctrl.tech==='PWM'){
+      fb.push({t:'fhz',i:'!',m:'INCOMPATIBLE: LiFePO4 battery with PWM controller. LiFePO4 requires a specific charge profile (constant-current / constant-voltage with precise absorption voltage). Most PWM controllers use a lead-acid profile that either undercharges LiFePO4 (leaving it at ~70% capacity) or overcharges it (damaging the BMS). Use an MPPT controller with a LiFePO4 charge profile setting.'});
+      score-=25;
+    }
+
+    if(ch==='LiFePO4')fb.push({t:'fok',i:'v',m:'LiFePO4: 80% DoD, 97% eff, 2000+ cycles, no off-gassing.'});
+    else if(ch==='AGM')fb.push({t:'fwn',i:'!',m:'AGM: sealed, 60% DoD. Good mid-range option. Do not exceed C0.2 charge rate.'});
+    else{
+      // 2E: Lead-Acid venting -- strengthen with specific NEC 480 detail
+      fb.push({t:'fhz',i:'!',m:'VENTING REQUIRED (NEC 480): Lead-Acid batteries produce hydrogen gas during charging. Hydrogen is explosive above 4% concentration -- a spark from a loose connection can ignite it. NEC 480 requires a dedicated, ventilated battery room or enclosure. Do not install in living spaces or sealed enclosures.'});
+      score-=10;
+    }
+
+    if(P.length>0){const cRate=panW/((batCapAh||1)*(batV||12));if(cRate>0.3){fb.push({t:'fwn',i:'!',m:'High charge rate C'+cRate.toFixed(2)+'. May overheat battery. Keep at or below C0.3.'});score-=8;}}
+    if(inv&&batV>0&&inv.inputv!==String(batV)){fb.push({t:'fbd',i:'x',m:'Voltage mismatch: Battery '+batV+'V vs Inverter input '+inv.inputv+'V.'});score-=20;}
+  }
+
+  // 2F: Temperature-corrected Voc (NEC 690.7)
+  // At cold temperatures Voc rises ~0.3%/degC. NEC 690.7 requires 1.25x correction
+  // for systems where temperature can drop below -40F/-40C, but even at 0C (32F)
+  // a 100W panel Voc 22.5V corrects to 22.5 * 1.25 = 28.1V.
+  // We apply the standard 1.25x NEC safety factor as a minimum cold-weather check.
+  if(P.length>0&&C.length>0){
+    const correctedVoc=avgVoc*1.25;
+    const ctrlMaxVoc=parseFloat(ctrl.maxvoc);
+    if(correctedVoc>ctrlMaxVoc){
+      fb.push({t:'fhz',i:'!',m:'COLD-WEATHER OVERVOLTAGE (NEC 690.7): Panel Voc rises as temperature drops. Applying the NEC 690.7 minimum 1.25x temperature correction factor: '+avgVoc.toFixed(1)+'V x 1.25 = '+correctedVoc.toFixed(1)+'V -- which EXCEEDS your controller\'s '+ctrlMaxVoc+'V maximum input. On a cold day this will destroy the controller. Use a controller with a higher Voc rating or reduce string voltage.'});
+      score-=20;
+    } else if(correctedVoc>ctrlMaxVoc*0.9){
+      fb.push({t:'fwn',i:'!',m:'Cold-weather Voc caution (NEC 690.7): Temperature-corrected Voc ('+avgVoc.toFixed(1)+'V x 1.25 = '+correctedVoc.toFixed(1)+'V) is within 10% of controller maximum ('+ctrlMaxVoc+'V). Safe for warm climates but monitor in cold weather.'});
+      score-=5;
+    } else {
+      fb.push({t:'fok',i:'v',m:'Cold-weather Voc OK (NEC 690.7): Temperature-corrected Voc '+correctedVoc.toFixed(1)+'V well below controller max '+ctrlMaxVoc+'V.'});
+    }
+  }
+  const acLoads=L.filter(l=>parseFloat(l.data.voltage)>=120);
+  if(acLoads.length>0&&I.length===0){fb.push({t:'fbd',i:'x',m:'AC loads need an inverter: '+acLoads.map(l=>l.data.name).join(', ')+'.'});score-=20;}
+  else if(I.length>0){
+    fb.push({t:'fok',i:'v',m:inv.watts+'W inverter: '+inv.inputv+'VDC to '+inv.outputv+'VAC.'});
+    if(peakLoad>parseFloat(inv.watts)){fb.push({t:'fbd',i:'x',m:'Inverter overloaded: '+peakLoad+'W peak load exceeds '+inv.watts+'W rating.'});score-=20;}
+    // NEC 690.8: AC output of inverter requires overcurrent protection (AC breaker)
+    if(ACB.length===0){
+      fb.push({t:'fbd',i:'x',m:'Missing AC Breaker on inverter output. NEC 690.8 requires overcurrent protection on the AC side of the inverter before any AC loads. Without it, an AC wiring fault has no protection -- the inverter itself is not a circuit breaker.'});score-=15;
+    } else {
+      // Check AC breaker ampacity vs inverter output current
+      const invOutA=parseFloat(inv.watts)/(parseFloat(inv.outputv)||120);
+      const acbA=Math.max(...ACB.map(a=>parseFloat(a.data.amps)));
+      if(invOutA>acbA*1.25){
+        fb.push({t:'fwn',i:'!',m:'AC Breaker may be undersized: inverter output ~'+invOutA.toFixed(1)+'A but breaker rated '+acbA+'A. Size AC breaker at 125% of inverter rated output current per NEC 690.8.'});score-=8;
+      } else {
+        fb.push({t:'fok',i:'v',m:'AC Breaker installed on inverter output. NEC 690.8 pass.'});
+      }
+    }
+  }
+  if(L.length===0)fb.push({t:'fwn',i:'!',m:'No loads added. Add appliances to evaluate energy balance.'});
+  else{
+    if(P.length>0){
+      if(ratio>=1.25)fb.push({t:'fok',i:'v',m:'Surplus: '+(ratio*100).toFixed(0)+'% coverage -- '+dailyGen.toFixed(0)+' vs '+dailyLoad.toFixed(0)+' Wh/day.'});
+      else if(ratio>=1.0){fb.push({t:'fwn',i:'!',m:'Tight: '+(ratio*100).toFixed(0)+'% coverage. Any cloudy day will drain the battery.'});score-=10;}
+      else{fb.push({t:'fbd',i:'x',m:'Deficit: only '+(ratio*100).toFixed(0)+'% solar coverage. Add more panels.'});score-=20;}
+    }
+    if(auto>=3)fb.push({t:'fok',i:'v',m:'Autonomy: '+auto.toFixed(1)+' days without sun. Excellent.'});
+    else if(auto>=1){fb.push({t:'fwn',i:'!',m:'Autonomy: '+auto.toFixed(1)+' day(s). Consider a larger battery.'});score-=5;}
+    else if(auto>0){fb.push({t:'fbd',i:'x',m:'Autonomy: only '+(auto*24).toFixed(1)+' hours. Battery too small for load.'});score-=15;}
+
+    // 4A: Duty-cycle correction for cyclic loads
+    const fridge=L.find(l=>l.data.id==='load-fridge');
+    if(fridge){
+      const realWh=parseFloat(fridge.data.watts)*parseFloat(fridge.data.hours)*0.5;
+      fb.push({t:'fin',i:'i',m:'Mini Fridge note: Compressors cycle on/off, averaging ~50% duty cycle. Actual draw is closer to '+realWh.toFixed(0)+' Wh/day vs the rated '+((parseFloat(fridge.data.watts)*parseFloat(fridge.data.hours)).toFixed(0))+' Wh/day. Your system may have more surplus than shown.'});
+    }
+
+    // 4B: Phantom load warning for devices left on standby
+    const phantomTypes=['load-phone','load-proj'];
+    const phantomLoads=L.filter(l=>phantomTypes.includes(l.data.id));
+    if(phantomLoads.length>0){
+      fb.push({t:'fin',i:'i',m:'Phantom load reminder: '+phantomLoads.map(l=>l.data.name).join(', ')+' draw power on standby even when not in use. In a small off-grid system these standby loads (typically 1-5W each) can drain the battery overnight. Use smart switches or power strips to cut power completely when not in use.'});
+    }
+  }
+
+  // 4C: Panel mismatch in series string -- different Voc panels in series
+  if(P.length>1){
+    const vocs=P.map(p=>parseFloat(p.data.voc));
+    const vocRange=Math.max(...vocs)-Math.min(...vocs);
+    if(vocRange>2){
+      fb.push({t:'fwn',i:'!',m:'Panel Voc mismatch: Panels have different open-circuit voltages ('+Math.min(...vocs)+'V to '+Math.max(...vocs)+'V). In a series string, mismatched panels reduce total output to the lowest common denominator. In a parallel string, the higher-Voc panel forces reverse current through the lower-Voc panel, degrading it. Match Voc within 0.5V for series strings and use blocking diodes or a combiner box for parallel strings.'});
+      score-=8;
+    }
+  }
+
+  // 4D: AFCI awareness (NEC 690.11) -- required for PV on or penetrating buildings
+  if(P.length>0){
+    fb.push({t:'fin',i:'i',m:'NEC 690.11 (AFCI): If this system is mounted on or penetrating a building, Arc Fault Circuit Interrupters are required on all DC circuits. DC arc faults do not self-extinguish like AC arcs -- they can burn continuously. AFCI detectors monitor for arc signatures and shut down the circuit. Consult your AHJ (Authority Having Jurisdiction) for local requirements.'});
+  }
+
+  // 4E: Rapid shutdown awareness (NEC 690.12)
+  if(P.length>0){
+    fb.push({t:'fin',i:'i',m:'NEC 690.12 (Rapid Shutdown): Rooftop systems must be capable of reducing array conductor voltage to 30V or less within 30 seconds of emergency shutdown. This protects firefighters from electrocution when cutting through the roof. Rapid shutdown switches and module-level power electronics (MLPEs) are the primary compliance methods.'});
+  }
+  if(F.length===0){
+    fb.push({t:'fhz',i:'!',m:'No fuses. NEC 690.9 violation. Short circuit without fuses means fire.'});score-=20;
+  } else {
+    // Topology check for each fuse: IN and OUT must each have exactly one wire,
+    // and those wires must connect to different components (not both to the same port side).
+    let fuseTopOK=true;
+    F.forEach(fuse=>{
+      const fuseWires=wires.filter(w=>w.a===fuse.id||w.b===fuse.id);
+      if(fuseWires.length===0){
+        fb.push({t:'fwn',i:'!',m:fuse.data.name+' is placed but not wired at all. An unwired fuse provides no protection -- wire its IN port to the source side and its OUT port to the load side.'});
+        score-=8;fuseTopOK=false;return;
+      }
+      // Check which ports are used
+      const inWires=fuseWires.filter(w=>(w.a===fuse.id&&w.ap==='pos')||(w.b===fuse.id&&w.bp==='pos'));
+      const outWires=fuseWires.filter(w=>(w.a===fuse.id&&w.ap==='neg')||(w.b===fuse.id&&w.bp==='neg'));
+      if(inWires.length===0&&outWires.length>0){
+        fb.push({t:'fbd',i:'x',m:fuse.data.name+' IN port is not connected. Both sides of a fuse must be wired: IN from the source (panel or battery) and OUT toward the load side. A fuse with only one terminal wired protects nothing -- an overcurrent on the unwired side has no path through the fuse.'});
+        score-=15;fuseTopOK=false;
+      } else if(outWires.length===0&&inWires.length>0){
+        fb.push({t:'fbd',i:'x',m:fuse.data.name+' OUT port is not connected. Both sides must be wired for current to flow through the fuse. Connect the OUT port to the next component toward the load (e.g. charge controller or disconnect switch).'});
+        score-=15;fuseTopOK=false;
+      } else if(inWires.length>0&&outWires.length>0){
+        // Both ports wired -- check they connect to DIFFERENT components
+        const inNeighbors=inWires.map(w=>w.a===fuse.id?w.b:w.a);
+        const outNeighbors=outWires.map(w=>w.a===fuse.id?w.b:w.a);
+        const sharedNeighbor=inNeighbors.some(id=>outNeighbors.includes(id));
+        if(sharedNeighbor){
+          fb.push({t:'fhz',i:'!',m:'FUSE BYPASS: '+fuse.data.name+' IN and OUT ports both connect to the same component. This short-circuits around the fuse -- current flows directly between those two ports without passing through the fuse element, so it provides zero overcurrent protection. Wire IN from the source side and OUT to a different component on the load side.'});
+          score-=25;fuseTopOK=false;
+        } else {
+          // Also check that both ports are not connected to the same port type on neighbors
+          // e.g. panel(+)→fuse(OUT) AND controller(+)→fuse(OUT) means IN is floating
+          // This is caught above by inWires.length===0, so if we get here both ports are used
+          // by different components -- topology is valid
+        }
+      }
+    });
+    if(fuseTopOK)fb.push({t:'fok',i:'v',m:F.length+' fuse/breaker(s) correctly wired IN-to-OUT. NEC 690.9 pass.'});
+  }
+  if(D.length===0){fb.push({t:'fbd',i:'x',m:'No disconnect switch. NEC 690.13 violation. Required for emergency shutoff.'});score-=10;}
+  else fb.push({t:'fok',i:'v',m:'Disconnect switch installed. NEC 690.13 pass.'});
+  if(sysV>50&&G.length===0){fb.push({t:'fhz',i:'!',m:'GROUNDING REQUIRED (NEC 690.41): System above 50V. Fault can energize metal frames -- electrocution hazard.'});score-=15;}
+  else if(G.length>0)fb.push({t:'fok',i:'v',m:'Earth ground installed. NEC 690.41 pass.'});
+  if(SP.length===0){fb.push({t:'fwn',i:'!',m:'No surge protection. Lightning can destroy all components. NEC 230.67 recommends SPD.'});score-=5;}
+  else{
+    // SPD topology check: it must be wired in PARALLEL (both + and - terminals connected),
+    // not in series (where it would be between a power source and a load).
+    SP.forEach(spd=>{
+      const spdWires=wires.filter(w=>w.a===spd.id||w.b===spd.id);
+      const hasPos=spdWires.some(w=>(w.a===spd.id&&w.ap==='pos')||(w.b===spd.id&&w.bp==='pos'));
+      const hasNeg=spdWires.some(w=>(w.a===spd.id&&w.ap==='neg')||(w.b===spd.id&&w.bp==='neg'));
+      if(spdWires.length===0){
+        fb.push({t:'fwn',i:'!',m:'Surge Protector is placed but not wired. Connect its + terminal to the positive bus and its - terminal to the negative bus (in parallel, not in series).'});score-=3;
+      } else if(!hasPos||!hasNeg){
+        fb.push({t:'fbd',i:'x',m:'Surge Protector wiring incomplete: only one terminal is connected. The SPD must have BOTH + and - terminals wired to the bus to function. A single-terminal SPD provides no protection.'});score-=10;
+      } else {
+        // Check for series wiring: SPD is in series if one of its terminals connects to a load
+        // i.e. the OTHER end of a wire from the SPD connects to a load component
+        const spdNeighborIds=spdWires.map(w=>w.a===spd.id?w.b:w.a);
+        const spdNeighborTypes=spdNeighborIds.map(id=>{const comp=comps.find(x=>x.id===id);return comp?comp.type:null;});
+        const inSeriesWithLoad=spdNeighborTypes.some(t=>t==='load'||t==='inverter');
+        if(inSeriesWithLoad){
+          fb.push({t:'fhz',i:'!',m:'WIRING ERROR: Surge Protector is wired IN SERIES with a load or inverter. The SPD must be wired in PARALLEL across the bus -- both terminals tap off the main + and - conductors. Wiring it in series interrupts current flow and may damage equipment.'});score-=20;
+        } else {
+          fb.push({t:'fok',i:'v',m:'Surge Protector correctly wired in parallel across the bus. NEC 230.67 pass.'});
+        }
+      }
+    });
+  }
+  // Chassis bonding check: at least one power component must have a bonding wire to the ground rod
+  if(G.length>0){
+    const gndIds=G.map(g=>g.id);
+    const bonded=wires.some(w=>w.hz==='bond'&&(gndIds.includes(w.a)||gndIds.includes(w.b)));
+    if(!bonded){fb.push({t:'fwn',i:'!',m:'Ground rod installed but no chassis bonding wires connected. Use the green bond port (⏚) on each component to connect its frame to the ground rod. NEC 690.41 requires bonding of all metal enclosures.'});score-=10;}
+    else{const bondCount=wires.filter(w=>w.hz==='bond').length;fb.push({t:'fok',i:'v',m:'Chassis bonding confirmed: '+bondCount+' bonding connection(s) to ground rod. NEC 690.41 pass.'});}
+  }
+
+  // 5A: AC voltage mismatch -- inverter output vs load requirements
+  if(I.length>0){
+    const invOutV=parseFloat(inv.outputv);
+    L.forEach(load=>{
+      const loadV=parseFloat(load.data.voltage);
+      if(loadV>=120&&Math.abs(loadV-invOutV)>20){
+        fb.push({t:'fbd',i:'x',m:'AC voltage mismatch: '+load.data.name+' requires '+loadV+'VAC but inverter outputs '+invOutV+'VAC. This load will not function and may be damaged. The EV L2 charger (240VAC) requires a split-phase or 240VAC inverter; standard 120VAC inverters cannot power it.'});
+        score-=15;
+      }
+    });
+  }
+
+  // 5B: Transfer switch warning -- EV charger could be connected to grid simultaneously
+  const hasEV=L.some(l=>l.data.id==='load-ev');
+  if(hasEV&&I.length>0){
+    fb.push({t:'fwn',i:'!',m:'Transfer Switch Required (NEC 702): If this EV charger circuit could also receive utility grid power, a transfer switch is mandatory. Connecting an inverter output to a circuit that can also receive grid power causes back-feed onto utility lines -- a lethal hazard for utility workers. The transfer switch ensures only one source powers the circuit at a time.'});
+    score-=8;
+  }
+
+  // 5C: Labeling requirements (NEC 690.17)
+  if(P.length>0){
+    fb.push({t:'fin',i:'i',m:'NEC 690.17 (Labeling): A permitted installation requires warning labels at every disconnect location, the main service panel, and the utility meter. Labels must read: "WARNING: SOLAR ELECTRIC SYSTEM CONNECTED" and indicate the location of all disconnecting means. This alerts first responders that the system may remain energized even when the main breaker is off.'});
+  }
+
+  // 5E: GFPD alternative to solid grounding (NEC 690.41)
+  if(P.length>0&&G.length===0&&sysV>50){
+    fb.push({t:'fin',i:'i',m:'NEC 690.41 Alternative: If a solidly grounded system is not used, a Ground Fault Protection Device (GFPD) is required instead. A GFPD monitors leakage current between the DC conductors and ground and shuts down the array if a fault is detected. This is the compliance path for transformerless inverters and ungrounded systems.'});
+  }
+  if(P.length>1&&ctrl){if(ctrl.tech==='MPPT')fb.push({t:'fin',i:'i',m:'Tip: With MPPT, wiring panels in series raises voltage and reduces current, allowing smaller wire gauges.'});else fb.push({t:'fin',i:'i',m:'Note: With PWM, panels must be parallel-wired to match battery voltage.'});}
+  if(G.length>0)fb.push({t:'fin',i:'i',m:'Ground fault protection: fault current flows to earth and trips the nearest fuse, protecting people from shock.'});
+  score=Math.max(0,Math.min(100,score));
+  const M={ratio,auto};
+  const sr=SCENS[activeScen].check(comps,M);
+  setMV('m-scen',SCENS[activeScen].name,'mvn');
+  setMV('m-goal',sr.met?'Complete':'Incomplete: '+sr.msg,sr.met?'mvg':'mvw');
+  setMV('m-pw',panW+' W',panW>0?'mvg':'mvn');
+  setMV('m-gen',dailyGen.toFixed(0)+' Wh/day',dailyGen>=dailyLoad&&dailyLoad>0?'mvg':(dailyLoad>0?'mvb':'mvn'));
+  setMV('m-cons',dailyLoad.toFixed(0)+' Wh/day','mvn');
+  setMV('m-bcap',batCapAh+' Ah','mvn');
+  setMV('m-buse',usableWh.toFixed(0)+' Wh','mvn');
+  setMV('m-auto',auto>0?auto.toFixed(1)+' days':'-- days',auto>=2?'mvg':(auto>=1?'mvw':'mvb'));
+  let sysEff=100;if(ctrlEff<1)sysEff*=ctrlEff;if(batEff<1)sysEff*=batEff;if(invEff<1&&I.length>0)sysEff*=invEff;sysEff*=100;
+  setMV('m-eff',P.length>0?sysEff.toFixed(1)+'%':'--',sysEff>80?'mvg':(sysEff>65?'mvw':'mvb'));
+  setMV('m-ctrl',ctrl?ctrl.tech+' '+ctrl.amps+'A':'None',ctrl?'mvg':'mvw');
+  if(P.length>0&&B.length>0&&C.length>0){const ok=avgVoc<=parseFloat(ctrl.maxvoc);setMV('m-vmatch',ok?'Compatible':'MISMATCH!',ok?'mvg':'mvb');}
+  setMV('m-fuse',F.length>0?F.length+'x installed':'None',F.length>0?'mvg':'mvb');
+  setMV('m-disc',D.length>0?'Installed':'None',D.length>0?'mvg':'mvw');
+  setMV('m-gnd',G.length>0?'Grounded':'None',(sysV>50&&G.length===0)?'mvb':(G.length>0?'mvg':'mvw'));
+  setMV('m-spd',SP.length>0?'Installed':'Not installed',SP.length>0?'mvg':'mvw');
+  setMV('m-acb',ACB.length>0?'Installed':'None',I.length>0?(ACB.length>0?'mvg':'mvb'):'mvn');
+  setMV('m-wg',wgIssues.length===0?'OK':wgIssues.length+' issue(s)',wgIssues.length===0?'mvg':'mvb');
+  const necOK=F.length>0&&D.length>0&&(sysV<=50||G.length>0);
+  setMV('m-nec',necOK?'Passing':'Violations',necOK?'mvg':'mvb');
+  const pp=dailyLoad>0?Math.min(100,(dailyGen/dailyLoad)*100):(panW>0?100:0);
+  setG2('g-pwr',pp,pp>=100?'#5DD87A':pp>=70?'#FFB340':'#FF6B6B');
+  const bp2=dailyLoad>0?Math.min(100,(usableWh/(dailyLoad*2))*100):(usableWh>0?50:0);
+  setG2('g-bat',bp2,bp2>=50?'#5DD87A':bp2>=25?'#FFB340':'#FF6B6B');
+  setG2('g-eff',P.length>0?Math.min(100,sysEff):0,sysEff>80?'#5DD87A':sysEff>65?'#FFB340':'#FF6B6B');
+  let gr,gc;
+  if(score>=90){gr='A';gc='gA';}else if(score>=80){gr='B';gc='gB';}else if(score>=65){gr='C';gc='gC';}else if(score>=50){gr='D';gc='gD';}else{gr='F';gc='gF';}
+  if(comps.length===0){gr='--';gc='g0';}
+  const gb=document.getElementById('gbadge');gb.textContent=gr;gb.className='gbadge '+gc;
+  document.getElementById('glbl').textContent='Score: '+(comps.length>0?score+'/100':'--')+' -- '+({A:'Excellent',B:'Good',C:'Fair',D:'Needs Work',F:'Critical Issues','--':'No System'}[gr]||'');
+  const fl=document.getElementById('fblist');fl.innerHTML='';
+  if(comps.length===0)fl.innerHTML='<div class="fbi fin"><span class="fii">i</span><span>Add components then click Analyze.</span></div>';
+  else fb.forEach(f=>{
+    const d=document.createElement('div');d.className='fbi '+f.t;
+    const icons={fhz:'⛔',fbd:'❌',fwn:'⚠️',fok:'✅',fin:'ℹ️'};
+    const labels={fhz:'Hazard',fbd:'Error',fwn:'Warning',fok:'Pass',fin:'Info'};
+    const ic=icons[f.t]||'•';const lb=labels[f.t]||'';
+    d.innerHTML='<span class="fii" role="img" aria-label="'+lb+'">'+ic+'</span><span>'+f.m+'</span>';
+    d.setAttribute('role','listitem');
+    fl.appendChild(d);
+  });
+  updateLiveness();drawWires();
+  const batSafeHazards=fb.filter(f=>f.t==='fhz'&&(f.m.includes('MIXED BATTERY')||f.m.includes('INCOMPATIBLE')||f.m.includes('VENTING REQUIRED')));
+  const batSafe=B.length===0?undefined:batSafeHazards.length===0;
+  const batSafeNote=B.length===0?'No battery':
+    batSafeHazards.length>0?batSafeHazards[0].m.substring(0,60)+'...':
+    (B[0]?.data.chemistry||'Unknown')+' -- chemistry OK';
+  lastM={score,grade:gr,panW,dailyGen,dailyLoad,usableWh,auto,sysEff,F:F.length,D:D.length,G:G.length,SP:SP.length,ACB:ACB.length,wgIssues,fb,sr,scen:activeScen,batSafe,batSafeNote};
+  showTab('feedback');
+
+  // Apply fire/spark visual state to components involved in hazards
+  wgFaultIds=new Set(wgIssues.map(x=>comps.find(c=>c.data.name===x.n)?.id).filter(Boolean));
+  comps.forEach(comp=>{
+    comp.el.classList.remove('on-fire');
+  });
+  // Fire on polarity-fault components
+  if(polFault){
+    wires.filter(w=>w.hz==='pol').forEach(w=>{
+      const ca=comps.find(x=>x.id===w.a),cb=comps.find(x=>x.id===w.b);
+      if(ca)ca.el.classList.add('on-fire');
+      if(cb)cb.el.classList.add('on-fire');
+    });
+  }
+  // Fire on ground-fault components
+  if(gndFault){
+    wires.filter(w=>w.hz==='gnd').forEach(w=>{
+      const ca=comps.find(x=>x.id===w.a),cb=comps.find(x=>x.id===w.b);
+      if(ca)ca.el.classList.add('on-fire');
+      if(cb)cb.el.classList.add('on-fire');
+    });
+  }
+  // Fire on components with wire gauge fire hazards
+  wgIssues.forEach(issue=>{
+    const comp=comps.find(x=>x.data.name===issue.n);
+    if(comp)comp.el.classList.add('on-fire');
+  });
+}
+function setMV(id,val,cls){
+  const e=document.getElementById(id);if(!e)return;
+  const pfx={mvg:'',mvw:'▲ ',mvb:'✕ '};  // warning triangle / cross for non-color cue
+  const lbl={mvg:'good',mvw:'warning',mvb:'critical',mvn:''};
+  e.textContent=(pfx[cls]||'')+val;
+  e.className='mv '+(cls||'mvn');
+  if(lbl[cls])e.setAttribute('aria-label',lbl[cls]+': '+val);
+  else e.removeAttribute('aria-label');
+}
+function setG2(id,pct,col){
+  const e=document.getElementById(id);if(!e)return;
+  const p=Math.min(100,Math.max(0,pct));
+  e.style.width=p+'%';e.style.background=col;
+  const bar=e.parentElement;
+  if(bar){bar.setAttribute('role','meter');bar.setAttribute('aria-valuenow',Math.round(p));bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax','100');bar.setAttribute('aria-label',(bar.dataset.label||'gauge')+': '+Math.round(p)+'%');}
+}
+function showRubric(){
+  if(!lastM.grade)analyze();
+  const m=lastM,now=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const gc={A:'#1B5E20',B:'#33691E',C:'#E65100',D:'#BF360C',F:'#B71C1C'};
+  const rows=[
+    {c:'Solar Panels',p:m.panW>0?10:0,x:10,n:m.panW>0?m.panW+'W, ~'+(m.dailyGen||0).toFixed(0)+' Wh/day':'No panels'},
+    {c:'Charge Controller',p:(m.sysEff||0)>80?10:(m.sysEff||0)>65?7:4,x:10,n:m.sysEff?'Efficiency: '+m.sysEff.toFixed(1)+'%':'Not evaluated'},
+    {c:'Battery Storage',p:(m.auto||0)>=2?15:(m.auto||0)>=1?10:(m.auto||0)>0?5:0,x:15,n:(m.usableWh||0)>0?(m.usableWh.toFixed(0)+' Wh usable, '+(m.auto||0).toFixed(1)+' day autonomy'):'No battery'},
+    {c:'Battery Chemistry / NEC 480',p:m.batSafe===undefined?3:m.batSafe?5:0,x:5,n:m.batSafeNote||'Not evaluated'},
+    {c:'Energy Balance',p:m.dailyLoad>0?Math.min(15,Math.round(((m.dailyGen||0)/Math.max(m.dailyLoad,1))*15)):0,x:15,n:m.dailyLoad>0?((m.dailyGen||0).toFixed(0)+' vs '+m.dailyLoad.toFixed(0)+' Wh/day'):'No loads'},
+    {c:'Fuses (NEC 690.9)',p:(m.F||0)>0?10:0,x:10,n:(m.F||0)>0?m.F+' device(s) installed':'Missing -- required'},
+    {c:'AC Breaker (NEC 690.8)',p:(m.ACB||0)>0?5:0,x:5,n:(m.ACB||0)>0?'Installed on inverter output':'Missing (required with inverter)'},
+    {c:'Disconnect (NEC 690.13)',p:(m.D||0)>0?8:0,x:8,n:(m.D||0)>0?'Installed':'Missing -- required'},
+    {c:'Grounding (NEC 690.41)',p:(m.G||0)>0?8:0,x:8,n:(m.G||0)>0?'Installed':'Not installed'},
+    {c:'Surge Protection',p:(m.SP||0)>0?4:0,x:4,n:(m.SP||0)>0?'SPD installed':'Not installed'},
+    {c:'Wire Gauge',p:(m.wgIssues||[]).length===0?10:Math.max(0,10-((m.wgIssues||[]).length)*3),x:10,n:(m.wgIssues||[]).length===0?'All gauges OK':((m.wgIssues||[]).length)+' undersized wire(s)'},
+    {c:'Scenario Goal',p:m.sr?.met?10:0,x:10,n:m.sr?.msg||'--'},
+  ];
+  const te=rows.reduce((s,r)=>s+r.p,0),tx=rows.reduce((s,r)=>s+r.x,0);
+  const trows=rows.map(r=>{const cl=r.p===r.x?'rok':(r.p>0?'rwn':'rbd');return'<tr><td>'+r.c+'</td><td class="'+cl+'">'+r.p+'/'+r.x+'</td><td>'+r.n+'</td></tr>';}).join('');
+  const hazards=(m.fb||[]).filter(f=>f.t==='fhz'),warns=(m.fb||[]).filter(f=>f.t==='fwn'),oks=(m.fb||[]).filter(f=>f.t==='fok');
+  document.getElementById('rmeta').innerHTML='Date: '+now+' | Scenario: '+(SCENS[activeScen]?.name||'')+' | Score: '+(m.score||0)+'/100';
+  document.getElementById('rbody').innerHTML=
+    '<div class="rgrade" style="background:'+(gc[m.grade]||'#555')+';color:#fff;">Grade: '+m.grade+' ('+te+'/'+tx+' pts)</div>'
+    +'<h2>Scoring Breakdown</h2><table class="rtbl"><thead><tr><th>Category</th><th>Score</th><th>Notes</th></tr></thead><tbody>'+trows+'</tbody></table>'
+    +(hazards.length?'<h2>Safety Hazards -- Must Fix</h2><div class="rfb">'+hazards.map(f=>'<div class="ri" style="color:#C62828"><strong>'+f.i+'</strong> '+f.m+'</div>').join('')+'</div>':'')
+    +(warns.length?'<h2>Warnings</h2><div class="rfb">'+warns.map(f=>'<div class="ri" style="color:#E65100">'+f.i+' '+f.m+'</div>').join('')+'</div>':'')
+    +(oks.length?'<h2>What is Working Well</h2><div class="rfb">'+oks.map(f=>'<div class="ri" style="color:#2E7D32">'+f.i+' '+f.m+'</div>').join('')+'</div>':'')
+    +'<h2>Scenario Goal</h2><div class="rfb"><div class="ri"><strong>'+(m.sr?.met?'COMPLETE':'INCOMPLETE')+':</strong> '+(m.sr?.msg||'')+'</div></div>';
+  document.getElementById('rmod').classList.add('show');
+}
+function resetUI(){
+  ['m-pw','m-gen','m-cons','m-bcap','m-buse','m-auto','m-eff','m-ctrl','m-vmatch','m-fuse','m-disc','m-gnd','m-spd','m-acb','m-wg','m-nec','m-scen','m-goal'].forEach(id=>setMV(id,'--','mvn'));
+  document.getElementById('gbadge').textContent='--';document.getElementById('gbadge').className='gbadge g0';
+  document.getElementById('glbl').textContent='Add components to begin';
+  ['g-pwr','g-bat','g-eff'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.width='0%';e.style.background='var(--info)';}});
+  document.getElementById('fblist').innerHTML='<div class="fbi fin"><span class="fii">i</span><span>Place components and click Analyze.</span></div>';
+  lastM={};
+}
+// ── TUTORIAL ENGINE ────────────────────────────────────────────────────────────
+// Steps 12, 13, 14 (0-indexed) need the right panel visible for Analyze/Results/Rubric.
+// On those steps the tutorial auto-minimizes to a 36px gold vertical tab on the right edge.
+// Clicking the tab (or the minimize button) restores the tutorial panel.
+const NEEDS_RP=new Set([12,13,14]);
+
+const TUT_STEPS=[
+  // 0
+  {title:'Welcome!',
+   what:'This tutorial walks you through building a complete, safe solar system -- the kind used in RVs and off-grid cabins.\n\nThe canvas will be cleared so you start fresh. The Next button locks until you complete each required action. You can go back with the Back button at any time.\n\nClick Next to begin.',
+   why:null,action:null,waitFor:null,spotQ:null},
+  // 1
+  {title:'Interface Tour',
+   what:'LEFT SIDEBAR: Component palette. Drag any card onto the canvas. Click section headers to collapse/expand.\n\nCENTER CANVAS: Your build area. Drag components anywhere. Hover a component and click the red X to remove it.\n\nRIGHT PANEL: Metrics, Feedback, and Guide tabs. Updated when you click Analyze.\n\nHEADER BUTTONS: Wire Mode connects ports. Analyze scores the design. Hint gives context help. Rubric exports a printable report.',
+   why:null,action:'Look at each area, then click Next.',waitFor:null,spotQ:null},
+  // 2
+  {title:'Step 1 -- Solar Panel',
+   what:'Solar panels convert sunlight into DC electricity.\n\nWe will use the 100W Panel:\n- Voc 22.5V: open-circuit voltage (must be below controller max input)\n- Isc 5.8A: short-circuit current (used to size fuses)\n- At 5 peak sun hours per day it generates about 500 Wh/day',
+   why:'Panel wattage x peak sun hours = daily Wh generated. Size panels to exceed total daily load consumption.',
+   action:'Find 100W Panel in the Solar Panels section. Drag it onto the canvas.',
+   waitFor:()=>comps.some(c=>c.data.id==='sp100'),
+   spotQ:()=>document.querySelector('#sbs-solar .sbs-body')},
+  // 3
+  {title:'Step 2 -- First Fuse',
+   what:'NEC 690.9 requires overcurrent protection on every solar conductor.\n\nSizing: fuse rated at Isc x 1.25 x 1.25 = 5.8 x 1.56 = about 9A minimum. The 15A Fuse/Breaker is the next standard size up -- perfect.\n\nWithout a fuse, a wiring fault lets current flow until the wire insulation melts and ignites.',
+   why:'The most commonly skipped component in DIY solar. Without it a short circuit can start a fire in seconds.',
+   action:'Find 15A Fuse/Breaker in Safety Devices. Drag it onto the canvas. When wiring later: connect the source (panel +) to the fuse IN port, and the fuse OUT port to the next component (controller +). Both ports must be wired to different components -- if both wires go to the same port side, the fuse is bypassed.',
+   waitFor:()=>comps.some(c=>c.type==='fuse'),
+   spotQ:()=>document.querySelector('#sbs-safety .sbs-body')},
+  // 4
+  {title:'Step 3 -- Charge Controller',
+   what:'The controller sits between panels and battery, regulating charging.\n\nPWM: clips panel voltage to battery voltage (~75% efficient). Panels MUST be wired in PARALLEL to match battery voltage. Cannot accept series strings.\nMPPT: tracks the maximum power point (~97% efficient). CAN accept high-voltage series strings, which is why it is the professional choice.\n\nUse MPPT 20A. Its MaxVoc of 50V safely exceeds our panel Voc of 22.5V.\n\nCRITICAL: Never wire panels in series with a PWM controller -- series wiring multiplies voltage (e.g. two 22.5V panels = 45V) far above what a 12V PWM controller can handle.',
+   why:'Without a controller, the 22.5V panel will directly overcharge a 12V battery, causing permanent damage or fire. Also: if you use a LiFePO4 battery, you MUST use an MPPT controller -- PWM controllers use a lead-acid charge profile that will either undercharge LiFePO4 or damage its battery management system.',
+   action:'Find MPPT 20A in Controllers. Drag it onto the canvas.',
+   waitFor:()=>comps.some(c=>c.data.id==='mppt20'),
+   spotQ:()=>document.querySelector('#sbs-controller .sbs-body')},
+  // 5
+  {title:'Step 4 -- Battery',
+   what:'The battery stores energy for night and cloudy days.\n\n12V 50Ah LiFePO4:\n- 12V x 50Ah = 600Wh total capacity\n- 80% DoD = 480Wh usable energy\n- 97% charge efficiency, 2000-5000 cycle lifespan\n\nWith 90 Wh/day of loads: 480 / 90 = 5.3 days autonomy.\n\nBATTERY SAFETY RULES:\n1. Never mix chemistries (e.g. LiFePO4 + Lead-Acid) -- different charge profiles cause rapid degradation and fire risk.\n2. Never mix voltages in parallel -- a 12V and 24V battery wired together destroys both immediately.\n3. Lead-Acid batteries MUST be in a vented enclosure -- they produce explosive hydrogen gas during charging (NEC 480).\n4. More than 4 batteries in parallel requires equal-length cables to avoid uneven charging.\n5. LiFePO4 requires an MPPT controller -- PWM will undercharge or damage it.',
+   why:'LiFePO4 is the gold standard: 2000+ cycles vs 300-500 for lead-acid, no maintenance, no off-gassing.',
+   action:'Find 12V 50Ah LiFePO4 in Batteries. Drag it onto the canvas.',
+   waitFor:()=>comps.some(c=>c.data.id==='bat12lifepo'),
+   spotQ:()=>document.querySelector('#sbs-battery .sbs-body')},
+  // 6
+  {title:'Step 5 -- Second Fuse',
+   what:'A second fuse is needed between the battery and loads.\n\nBatteries can deliver thousands of amps into a dead short -- far more dangerous than a panel alone. NEC 690.9 requires this fuse within 18 inches of the battery terminal.\n\nWithout it, a short circuit turns the wire into a heating element in under one second.\n\nFUSE SIZING RULE (NEC 690.9):\nThe fuse rating must be equal to or less than the wire ampacity. A 30A fuse on 14 AWG wire (rated 15A) is a protection defeat -- the wire will overheat and burn before the fuse blows. Always match: 14 AWG = max 15A fuse, 12 AWG = max 20A fuse, 10 AWG = max 30A fuse.',
+   why:'The battery fuse is the most critical fuse in the system. Professional installers never skip it.',
+   action:'Drag a second 15A Fuse/Breaker from Safety Devices onto the canvas.',
+   waitFor:()=>comps.filter(c=>c.type==='fuse').length>=2,
+   spotQ:()=>document.querySelector('#sbs-safety .sbs-body')},
+  // 7
+  {title:'Step 6 -- Disconnect Switch',
+   what:'NEC 690.13 requires a manually accessible disconnect on every solar installation.\n\nYou need it for:\n- Maintenance: always open disconnect before working on the system\n- Emergencies: firefighters need to de-energize quickly\n- Troubleshooting: safely isolate sections\n\nWHAT IS THE MAIN BUS?\nIn this system, the \'main bus\' is simply the two conductors that run from the battery and disconnect switch out to everything downstream:\n- Positive bus (+): the wire from the battery (+) through the fuse and disconnect to the loads\n- Negative bus (-): the return wire from all loads back to the battery (-)\n\nAny device that monitors or protects the circuit -- like the Surge Protector on the next steps -- taps onto BOTH bus conductors in parallel, without interrupting the flow to the loads.',
+   why:'Multiple firefighter injuries resulted from solar systems without accessible disconnects. NEC 690.13 was strengthened after these incidents.',
+   action:'Find Disconnect Switch in Safety Devices. Drag it onto the canvas.',
+   waitFor:()=>comps.some(c=>c.type==='disconnect'),
+   spotQ:()=>document.querySelector('#sbs-safety .sbs-body')},
+  // 8
+  {title:'Step 7 -- Ground Rod',
+   what:'Earth grounding bonds all metal parts to earth via a copper rod.\n\nNEC 690.41 requires grounding for systems over 50V. Our 12V system is below that threshold -- but grounding is still strongly recommended.\n\nWithout it: a fault puts full system voltage on metal panel frames. With it: fault current flows safely to earth and trips the fuse.',
+   why:'Grounding creates equipotential bonding -- all metal surfaces stay at earth potential, preventing shock even during a fault.',
+   action:'Find Ground Rod in Safety Devices. Drag it anywhere on the canvas.',
+   waitFor:()=>comps.some(c=>c.type==='ground'),
+   spotQ:()=>document.querySelector('#sbs-safety .sbs-body')},
+  // 9
+  {title:'Step 8 -- Surge Protector',
+   what:'An SPD clamps voltage spikes from lightning and transients.\n\nWithout one, a nearby lightning strike can induce thousands of volts on wiring -- instantly destroying the controller, battery BMS, and inverter.\n\nNEC 230.67 recommends SPDs on all service entries. They cost $20-60 and protect thousands of dollars of equipment.\n\nHOW TO WIRE IT (PARALLEL CONNECTION):\nRemember the positive and negative bus from Step 6? The SPD taps onto both of those conductors at the same point -- it does NOT go in the path between any two components.\n\nIn Wire Mode:\n- Connect the SPD (+) to the same positive conductor the disconnect and loads share\n- Connect the SPD (-) to the same negative conductor the loads return on\n\nThink of it like an outlet on a power strip -- it connects across the voltage, not in line with any specific device. Current flows through the loads as normal; the SPD only activates when a spike occurs.',
+   why:'Most charge controller warranties are voided by lightning damage. Rural locations get 2-3 near-miss strikes per season on average.',
+   action:'Find Surge Protector (SPD) in Safety Devices. Drag it onto the canvas. In Wire Mode, connect its + terminal to the positive bus and its - terminal to the negative bus -- both tapping off the same conductors the loads use, not wired between any two components.',
+   waitFor:()=>comps.some(c=>c.type==='surge'),
+   spotQ:()=>document.querySelector('#sbs-safety .sbs-body')},
+  // 10
+  {title:'Step 9 -- Loads',
+   what:'Loads are the devices your system powers. Add both:\n- LED Lights: 10W x 8h = 80 Wh/day (12V DC)\n- Phone Charger: 5W x 2h = 10 Wh/day (USB DC)\n\nTotal: 90 Wh/day\n\nOur 100W panel generates about 500 Wh/day -- a 5.5x surplus.\nBattery autonomy = 480 / 90 = 5.3 days without sun.',
+   why:'Load analysis comes before equipment selection in professional design. Under-sized panels create a system that fails every evening.',
+   action:'Drag LED Lights and Phone Charger from the Loads section onto the canvas.',
+   waitFor:()=>comps.filter(c=>c.type==='load').length>=2,
+   spotQ:()=>document.querySelector('#sbs-load .sbs-body')},
+  // 11
+  {title:'Step 10 -- Wire Mode',
+   what:'Click Wire Mode in the top bar. Each connection below is ONE wire: click the first port, then click the second port.\n\nPORT SHAPES: Circle = (+/PV+/BAT+)  Square = (-/PV-/BAT-)  Diamond = GND  Teardrop = Bond (⏫)\nFuses and Disconnect use IN/OUT. Controller uses PV+/PV- (panel side) and BAT+/BAT- (battery side).\n\n--- CHARGING CIRCUIT (panel charges battery) ---\n\n1. 100W Panel (+) → Fuse 1 (IN)\n   Positive current from the panel enters the fuse.\n\n2. Fuse 1 (OUT) → MPPT Controller (PV+)\n   Protected current enters the panel-side positive input of the controller.\n\n3. 100W Panel (-) → MPPT Controller (PV-)\n   Panel negative connects to the panel-side negative input of the controller.\n\n4. MPPT Controller (BAT+) → Battery (+)\n   Regulated charging current from the battery-side output goes to battery positive.\n\n5. MPPT Controller (BAT-) → Battery (-)\n   Charging return path: controller battery-side negative to battery negative.\n\n--- DISCHARGE CIRCUIT (battery powers loads) ---\n\n6. Battery (+) → Fuse 2 (IN)\n   Positive discharge current from the battery enters the second fuse.\n\n7. Fuse 2 (OUT) → Disconnect Switch (IN)\n   Protected current exits the fuse and enters the disconnect.\n\n8. Disconnect Switch (OUT) → LED Lights (+)\n   Current through the disconnect reaches the first load.\n\n9. Disconnect Switch (OUT) → Phone Charger (+)\n   Same disconnect feeds the second load.\n\n10. LED Lights (-) → Battery (-)\n    Return current from LED Lights goes back to battery negative.\n\n11. Phone Charger (-) → Battery (-)\n    Return current from Phone Charger goes back to battery negative.\n\n--- PARALLEL TAP: Surge Protector ---\nThe SPD monitors voltage but carries NO current during normal operation.\n\n12. Surge Protector (+) → Disconnect Switch (OUT)\n    SPD positive taps the positive bus (same point as the loads).\n\n13. Surge Protector (-) → Battery (-)\n    SPD negative taps the negative bus. No current flows normally.\n\n--- CHASSIS BONDING (safety, no current) ---\n\n14. 100W Panel (⏫) → Ground Rod (GND)\n    Bonds the panel frame to earth.\n\n15. MPPT Controller (⏫) → Ground Rod (GND)\n    Bonds the controller enclosure to earth.\n\n16. Battery (⏫) → Ground Rod (GND)\n    Bonds the battery enclosure to earth.\n\nTo delete a wrong wire: stay in Wire Mode and click the wire.\n\n⚠️ HEADS UP -- NEXT 3 STEPS:\nAfter completing Wire Gauges, this panel collapses to a gold tab. Click it to restore instructions at any time.',
+   why:'Current always flows in a loop: out of (+) through the circuit and back into (-). Every connection in the power circuit follows this rule. Connecting (+) to (+) between power sources creates a short circuit that destroys equipment instantly -- the simulation detects this and flashes a warning. The SPD and chassis bonds are exceptions: they tap in parallel and do not carry normal operating current.',
+   action:'Click Wire Mode in the top bar, then follow the numbered connections above one by one. To delete a wrong wire: stay in Wire Mode and click it. Complete all 16 connections (or at least 5 to unlock Next), then click Exit Wiring and click Next.',
+   waitFor:()=>wires.length>=5,
+   spotQ:()=>document.getElementById('bwire')},
+  // 12
+  {title:'Step 11 -- Wire Gauges',
+   what:'Each component has a Wire Gauge dropdown. Smaller AWG number = thicker wire = more current capacity.\n\n14 AWG: 15A max\n12 AWG: 20A max\n10 AWG: 30A max\n\nFor our system:\n- Panel to Controller: about 7A -- 14 AWG is fine\n- Controller to Battery: up to 20A -- 12 AWG minimum\n- Battery to Loads: about 1.25A -- 14 AWG is fine\n\nAnalyze will flag undersized wire as a fire hazard.\n\nFUSE-WIRE RULE: The fuse protecting a wire must be rated EQUAL TO OR LESS THAN the wire\'s ampacity. Example: 14 AWG wire (15A max) needs a 15A or smaller fuse. A 30A fuse on 14 AWG wire will not blow before the wire catches fire.',
+   why:'Wire gauge selection is one of the most common DIY solar mistakes. NEC Table 310.16 defines ampacity ratings used by professional engineers.',
+   action:'Check each component Wire Gauge dropdown and update any that are undersized. Then click Next.',
+   waitFor:null,
+   spotQ:()=>document.querySelector('.cv .wgsel select')},
+  // 13 -- NEEDS_RP: tutorial auto-minimizes, right panel visible
+  {title:'Step 12 -- Analyze!',
+   what:'Click the ⚡ Analyze button in the top bar. The engine will:\n- Score your system 0-100 with grade A-F\n- Check energy balance (panels vs loads)\n- Calculate battery autonomy\n- Audit NEC safety compliance\n- Flag wire gauge fire hazards\n\nFeedback colors:\nRed = Hazard or error  |  Orange = Warning\nGreen = Good design  |  Blue = Info tip\n\nWhen done, click the gold ◄ tab on the right edge to restore this tutorial panel.',
+   why:'Professional designers use tools like PVsyst and Aurora Solar to validate systems before installation. This simulation mirrors that process.',
+   action:'Click Analyze in the top bar. Then click the gold tab on the right to return here.',
+   waitFor:()=>!!lastM.grade,
+   spotQ:()=>document.querySelector('.btn-run')},
+  // 14 -- NEEDS_RP
+  {title:'Step 13 -- Review Results',
+   what:'The right panel is fully visible with your results.\n\nRead through the Feedback tab -- each item explains what is right, wrong, or needs attention. Color codes:\nRed = hazard or error\nOrange = warning\nGreen = good design choice\nBlue = informational tip\n\nThen click the Metrics tab to see:\n- Power generation vs consumption gauge\n- Battery autonomy gauge\n- System efficiency\n- Full NEC safety checklist\n\nA well-built system shows mostly green items and a grade of A or B.\n\nWhen done, click the gold tab on the right edge to restore this panel.',
+   why:'Interpreting engineering feedback is a transferable skill. Real commissioning reports flag NEC violations, calculate performance ratios, and estimate battery autonomy.',
+   action:'Read the Feedback and Metrics tabs. Click the gold tab on the right to restore this panel, then click Next.',
+   waitFor:null,
+   spotQ:()=>document.getElementById('t-feedback')},
+  // 15 -- NEEDS_RP
+  {title:'Step 14 -- Export Rubric',
+   what:'Click the Rubric button in the top bar to open your printable scoring report.\n\nThe rubric shows:\n- Letter grade and total points earned\n- Score breakdown by category (10 categories, 100 points total)\n- Safety hazards that must be fixed\n- Scenario goal pass or fail\n\nTo save as PDF:\n1. Click Rubric\n2. Click Print / Save PDF inside the rubric\n3. Choose Save as PDF in the print dialog\n4. Click Save\n\nWhen done, close the rubric, click the gold tab to restore this panel, then click Finish.',
+   why:'Real solar installations require As-Built documentation and NEC compliance records for permit inspections.',
+   action:'Click Rubric, review the report, close it, click the gold tab to restore this panel, then Finish.',
+   waitFor:null,
+   spotQ:()=>document.querySelector('.btn-exp')}
+];
+
+let tutStep=0,tutActive=false,tutTimer=null;
+
+function startTutorial(){
+  clearAll();
+  tutStep=0;tutActive=true;
+  setScen('free');
+  document.querySelectorAll('.sbs').forEach(s=>s.classList.add('collapsed'));document.getElementById('sbs-solar').classList.remove('collapsed');document.getElementById('sbs-safety').classList.remove('collapsed');document.getElementById('sbs-battery').classList.remove('collapsed');
+  const panel=document.getElementById('tut-panel');
+  panel.classList.remove('minimized');
+  panel.classList.add('show');
+  document.getElementById('tut-done').classList.remove('show');
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sb-tutorial').classList.add('on');
+  renderStep();
+}
+
+function exitTutorial(){
+  tutActive=false;clearTutTimer();
+  const panel=document.getElementById('tut-panel');
+  panel.classList.remove('show','minimized');
+  document.getElementById('spot-ring').style.cssText='display:none';
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sb-free').classList.add('on');
+}
+
+function clearTutTimer(){if(tutTimer){clearInterval(tutTimer);tutTimer=null;}}
+
+function tutNext(){
+  clearTutTimer();
+  tutStep++;
+  if(tutStep>=TUT_STEPS.length){exitTutorial();document.getElementById('tut-done').classList.add('show');return;}
+  renderStep();
+}
+
+function tutPrev(){
+  clearTutTimer();
+  if(tutStep>0){tutStep--;renderStep();}
+}
+
+function tutToggleMin(){
+  const panel=document.getElementById('tut-panel');
+  panel.classList.toggle('minimized');
+  // When restoring, scroll the body back to top
+  if(!panel.classList.contains('minimized')){
+    const body=document.getElementById('tp-body');
+    if(body)body.scrollTop=0;
+  }
+  updateSpot(TUT_STEPS[tutStep]);
+}
+
+function renderStep(){
+  const s=TUT_STEPS[tutStep],total=TUT_STEPS.length;
+  const panel=document.getElementById('tut-panel');
+
+  // Auto-minimize for steps that need the right panel visible
+  if(NEEDS_RP.has(tutStep)){
+    panel.classList.add('minimized');
+  } else {
+    panel.classList.remove('minimized');
+  }
+
+  document.getElementById('tp-badge').textContent='STEP '+(tutStep+1)+'/'+total;
+  document.getElementById('tp-title').textContent=s.title;
+  document.getElementById('tp-pfill').style.width=((tutStep/(total-1))*100)+'%';
+  document.getElementById('tp-plbl').textContent=(tutStep+1)+'/'+total;
+  document.getElementById('tp-what').innerHTML=s.what.replace(/\n/g,'<br>');
+
+  const wyEl=document.getElementById('tp-why');
+  if(s.why){wyEl.style.display='block';document.getElementById('tp-why-txt').textContent=s.why;}
+  else wyEl.style.display='none';
+
+  const acEl=document.getElementById('tp-act');
+  if(s.action){acEl.style.display='block';document.getElementById('tp-act-txt').innerHTML=s.action;}
+  else acEl.style.display='none';
+
+  const wtEl=document.getElementById('tp-wait'),nbtn=document.getElementById('tp-nbtn');
+  if(s.waitFor){
+    wtEl.style.display='flex';wtEl.classList.remove('done');
+    document.getElementById('tp-wait-txt').textContent='Waiting for you to complete this step...';
+    nbtn.disabled=true;nbtn.textContent='Waiting...';
+    tutTimer=setInterval(()=>{
+      if(s.waitFor()){
+        clearTutTimer();
+        wtEl.classList.add('done');
+        document.getElementById('tp-wait-txt').textContent='Done! Click Next to continue.';
+        nbtn.disabled=false;nbtn.textContent='Next';
+        // Auto-restore minimized panel so student sees the Next button
+        if(panel.classList.contains('minimized')){
+          panel.classList.remove('minimized');
+          const body=document.getElementById('tp-body');
+          if(body)body.scrollTop=0;
+        }
+      }
+    },350);
+  } else {
+    wtEl.style.display='none';
+    nbtn.disabled=false;
+    nbtn.textContent=tutStep===total-1?'Finish':'Next';
+  }
+
+  const pbtn=document.getElementById('tp-pbtn');
+  if(pbtn){pbtn.disabled=tutStep===0;pbtn.style.opacity=tutStep===0?'0.35':'1';}
+
+  const body=document.getElementById('tp-body');if(body)body.scrollTop=0;
+  updateSpot(s);
+}
+
+function updateSpot(s){
+  const ring=document.getElementById('spot-ring');
+  if(!s||!s.spotQ){ring.style.cssText='display:none';return;}
+
+  // If the target is inside a collapsed sidebar section, expand it first
+  // so the spotlight is actually visible to the student
+  const target=s.spotQ();
+  if(target){
+    let node=target.parentElement;
+    while(node){
+      if(node.classList&&node.classList.contains('sbs')&&node.classList.contains('collapsed')){
+        node.classList.remove('collapsed');
+        break;
+      }
+      node=node.parentElement;
+    }
+  }
+
+  const el=s.spotQ(); // re-query after potential expand
+  if(!el){ring.style.cssText='display:none';return;}
+  requestAnimationFrame(()=>{
+    const r=el.getBoundingClientRect(),pad=5;
+    ring.style.cssText='display:block;position:fixed;left:'+(r.left-pad)+'px;top:'+(r.top-pad)+'px;width:'+(r.width+pad*2)+'px;height:'+(r.height+pad*2)+'px;border-radius:6px;pointer-events:none;z-index:9999;';
+  });
+}
+
+window.addEventListener('resize',()=>{if(tutActive&&TUT_STEPS[tutStep])updateSpot(TUT_STEPS[tutStep]);});
+
+function printRubric(){
+  const meta=document.getElementById('rmeta').innerHTML;
+  const body=document.getElementById('rbody').innerHTML;
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Solar System Rubric</title>'
+    +'<style>'
+    +'*{margin:0;padding:0;box-sizing:border-box;}'
+    +'body{font-family:Arial,sans-serif;padding:20px;color:#111;background:#fff;font-size:13px;line-height:1.5;}'
+    +'h1{font-size:1.3rem;color:#1a1a2e;margin-bottom:4px;letter-spacing:1px;}'
+    +'.meta{font-size:0.8rem;color:#666;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #eee;}'
+    +'h2{font-size:0.85rem;letter-spacing:1px;color:#333;margin:12px 0 4px;text-transform:uppercase;border-left:4px solid #1565C0;padding-left:6px;}'
+    +'.rgrade{font-size:1.8rem;font-weight:700;text-align:center;padding:8px;border-radius:6px;margin-bottom:12px;}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:10px;}'
+    +'th{background:#1565C0;color:#fff;padding:5px 8px;text-align:left;font-size:0.8rem;}'
+    +'td{padding:4px 8px;border-bottom:1px solid #ddd;vertical-align:top;}'
+    +'tr:nth-child(even) td{background:#f8f8f8;}'
+    +'.rok{color:#2E7D32;font-weight:600}'
+    +'.rwn{color:#E65100;font-weight:600}'
+    +'.rbd{color:#C62828;font-weight:600}'
+    +'.rfb{background:#f5f5f5;border-radius:4px;padding:8px;margin-bottom:10px;}'
+    +'.ri{padding:3px 0;border-bottom:1px solid #e0e0e0;}'
+    +'.ri:last-child{border:none;}'
+    +'</style>'
+    +'</head><body>'
+    +'<h1>Solar System Design Rubric</h1>'
+    +'<div class="meta">'+meta+'</div>'
+    +body
+    +'</body></html>';
+  const w=window.open('','_blank','width=700,height=900');
+  if(!w){alert('Please allow popups for this page to print the rubric.');return;}
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),400);
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(tutActive){exitTutorial();return;}
+    if(wireMode)toggleWire();
+    closeHint();
+    document.getElementById('rmod').classList.remove('show');
+    document.getElementById('tut-done').classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>
