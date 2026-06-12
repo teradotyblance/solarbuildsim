@@ -303,6 +303,25 @@ select:focus-visible{outline:2px solid var(--sun);outline-offset:1px;}
   .wspd{opacity:0.4;}
 }
 ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--panel-bg);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+/* ── Solar Conditions Bar ── */
+#solar-bar{background:linear-gradient(to right,rgba(16,24,38,0.98),rgba(8,12,24,0.98));border-bottom:1px solid var(--border);padding:3px 10px;flex-shrink:0;}
+.solar-bar-row{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;}
+.solar-bar-lbl{font-family:'Rajdhani',sans-serif;font-size:0.68rem;color:var(--sun);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;flex-shrink:0;font-weight:700;}
+.solar-presets{display:flex;gap:3px;flex-wrap:nowrap;flex-shrink:0;}
+.spr{font-family:'Rajdhani',sans-serif;font-size:0.64rem;font-weight:600;letter-spacing:0.5px;padding:2px 6px;border:1px solid var(--border);background:var(--card2);color:var(--dim);border-radius:3px;cursor:pointer;transition:all 0.13s;text-transform:uppercase;white-space:nowrap;}
+.spr:hover{border-color:var(--sun);color:var(--sun);}
+.spr.on{background:rgba(255,217,74,0.15);border-color:var(--sun);color:var(--sun);}
+.solar-adj-btn{font-family:'Rajdhani',sans-serif;font-size:0.64rem;font-weight:600;letter-spacing:0.5px;padding:2px 8px;border:1px solid var(--info);background:var(--card2);color:var(--info);border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.13s;}
+.solar-adj-btn:hover,.solar-adj-btn.on{background:rgba(91,168,255,0.1);}
+.solar-readout{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.solar-g-lbl{font-family:'Share Tech Mono',monospace;font-size:0.74rem;font-weight:700;color:var(--sun);white-space:nowrap;}
+.solar-pct-lbl{font-family:'Share Tech Mono',monospace;font-size:0.64rem;color:var(--dim);white-space:nowrap;}
+#solar-sliders{padding:5px 0 3px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+.solar-slider-row{display:flex;align-items:center;gap:5px;}
+.solar-sl-lbl{font-family:'Rajdhani',sans-serif;font-size:0.62rem;color:var(--dim);letter-spacing:0.5px;text-transform:uppercase;white-space:nowrap;min-width:86px;flex-shrink:0;}
+.solar-sl-edge{font-size:0.6rem;color:var(--dim);white-space:nowrap;flex-shrink:0;}
+.solar-range{width:110px;accent-color:var(--sun);cursor:pointer;flex-shrink:0;}
+.solar-sl-val{font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--sun);min-width:96px;white-space:nowrap;}
 
 </style>
 </head>
@@ -361,6 +380,49 @@ select:focus-visible{outline:2px solid var(--sun);outline-offset:1px;}
     <button class="sp-close" onclick="dismissScenPanel()" aria-label="Dismiss scenario details">&#x2715;</button>
   </div>
   <div class="sp-body" id="sp-body"></div>
+</div>
+<div id="solar-bar" role="region" aria-label="Solar irradiance conditions">
+  <div class="solar-bar-row">
+    <span class="solar-bar-lbl">&#9728; Solar</span>
+    <div class="solar-presets" role="group" aria-label="Solar condition presets">
+      <button class="spr on" id="spr-stc" onclick="setSolarPreset('stc')" title="Standard Test Conditions: 1000 W/m&#178; at 25&#176;C (AM1.5) &#8212; industry sizing standard">STC &#9733;</button>
+      <button class="spr" id="spr-dawn" onclick="setSolarPreset('dawn')" title="Dawn/Dusk (6:30am): ~40 W/m&#178;">Dawn</button>
+      <button class="spr" id="spr-morning" onclick="setSolarPreset('morning')" title="Morning (9am, clear sky): ~630 W/m&#178;">Morning</button>
+      <button class="spr" id="spr-noon" onclick="setSolarPreset('noon')" title="Clear Noon (12pm): ~950 W/m&#178;">Noon</button>
+      <button class="spr" id="spr-afternoon" onclick="setSolarPreset('afternoon')" title="Afternoon (3pm, clear sky): ~600 W/m&#178;">Afternoon</button>
+      <button class="spr" id="spr-cloudy" onclick="setSolarPreset('cloudy')" title="Partly Cloudy (noon): ~380 W/m&#178;">P.Cloudy</button>
+      <button class="spr" id="spr-overcast" onclick="setSolarPreset('overcast')" title="Overcast (noon): ~120 W/m&#178;">Overcast</button>
+      <button class="spr" id="spr-rain" onclick="setSolarPreset('rain')" title="Heavy Rain/Storm (noon): ~35 W/m&#178;">Rain</button>
+    </div>
+    <button class="solar-adj-btn" id="solar-adj-btn" onclick="toggleSolarAdj()" title="Fine-tune conditions with sliders" aria-expanded="false" aria-controls="solar-sliders">&#9660; Adjust</button>
+    <div class="solar-readout">
+      <span class="solar-g-lbl" id="solar-g-val" aria-live="polite">G: 1000 W/m&#178;</span>
+      <span class="solar-pct-lbl" id="solar-pct-val">100% STC</span>
+    </div>
+  </div>
+  <div id="solar-sliders" style="display:none" aria-hidden="true">
+    <div class="solar-slider-row">
+      <label class="solar-sl-lbl" for="sl-time">Time of Day</label>
+      <span class="solar-sl-edge">6am</span>
+      <input type="range" id="sl-time" min="6" max="18" step="0.5" value="12" class="solar-range" oninput="onSolarSlide()" aria-label="Time of day, 6am to 6pm">
+      <span class="solar-sl-edge">6pm</span>
+      <span class="solar-sl-val" id="sl-time-val">12:00 (Noon)</span>
+    </div>
+    <div class="solar-slider-row">
+      <label class="solar-sl-lbl" for="sl-sky">Sky / Clouds</label>
+      <span class="solar-sl-edge">Rain</span>
+      <input type="range" id="sl-sky" min="0" max="100" step="1" value="100" class="solar-range" oninput="onSolarSlide()" aria-label="Sky conditions, 0 heavy rain to 100 clear sky">
+      <span class="solar-sl-edge">Clear</span>
+      <span class="solar-sl-val" id="sl-sky-val">Clear (100%)</span>
+    </div>
+    <div class="solar-slider-row">
+      <label class="solar-sl-lbl" for="sl-angle">Incidence Angle</label>
+      <span class="solar-sl-edge">0&#176; &#9733;</span>
+      <input type="range" id="sl-angle" min="0" max="89" step="1" value="0" class="solar-range" oninput="onSolarSlide()" aria-label="Panel angle of incidence, 0 degrees optimal to 89 degrees edge-on">
+      <span class="solar-sl-edge">89&#176;</span>
+      <span class="solar-sl-val" id="sl-angle-val">0&#176; (Optimal)</span>
+    </div>
+  </div>
 </div>
 <div class="main">
 <div class="sidebar">
@@ -432,7 +494,7 @@ select:focus-visible{outline:2px solid var(--sun);outline-offset:1px;}
   <div class="rps"><div style="display:flex;gap:4px;margin-bottom:6px;"><button class="mbtn on" id="t-metrics" onclick="showTab('metrics')">Metrics</button><button class="mbtn" id="t-feedback" onclick="showTab('feedback')">Feedback</button><button class="mbtn" id="t-guide" onclick="showTab('guide')">Guide</button></div></div>
   <div id="tc-metrics">
     <div class="rps"><div style="text-align:center;margin-bottom:4px;"><div class="gbadge g0" id="gbadge">&#8212;</div><div class="glbl" id="glbl">Add components to begin</div></div></div>
-    <div class="rps"><h3>Power</h3><div class="mr"><span class="ml">Panel Output</span><span class="mv mvn" id="m-pw">0 W</span></div><div class="mr"><span class="ml">Daily Generation</span><span class="mv mvn" id="m-gen">0 Wh/day</span></div><div class="mr"><span class="ml">Daily Consumption</span><span class="mv mvn" id="m-cons">0 Wh/day</span></div><div class="gbar" data-label="Power coverage"><div class="gfill" id="g-pwr" style="width:0%"></div></div><h3>Battery</h3><div class="mr"><span class="ml">Capacity</span><span class="mv mvn" id="m-bcap">0 Ah</span></div><div class="mr"><span class="ml">Usable Energy</span><span class="mv mvn" id="m-buse">0 Wh</span></div><div class="mr"><span class="ml">Autonomy</span><span class="mv mvn" id="m-auto">&#8212; days</span></div><div class="gbar" data-label="Battery autonomy"><div class="gfill" id="g-bat" style="width:0%"></div></div><h3>Efficiency</h3><div class="mr"><span class="ml">System Eff.</span><span class="mv mvn" id="m-eff">&#8212;</span></div><div class="mr"><span class="ml">Controller</span><span class="mv mvn" id="m-ctrl">None</span></div><div class="mr"><span class="ml">Volt. Match</span><span class="mv mvn" id="m-vmatch">&#8212;</span></div><div class="gbar" data-label="System efficiency"><div class="gfill" id="g-eff" style="width:0%"></div></div></div>
+    <div class="rps"><h3>Power</h3><div class="mr"><span class="ml">Irradiance</span><span class="mv mvn" id="m-irr">&#8212;</span></div><div class="mr"><span class="ml">Conditions</span><span class="mv mvn" id="m-cond" style="font-size:0.64rem">STC</span></div><div class="mr"><span class="ml">Panel Output</span><span class="mv mvn" id="m-pw">0 W</span></div><div class="mr"><span class="ml">Daily Generation</span><span class="mv mvn" id="m-gen">0 Wh/day</span></div><div class="mr"><span class="ml">Daily Consumption</span><span class="mv mvn" id="m-cons">0 Wh/day</span></div><div class="gbar" data-label="Power coverage"><div class="gfill" id="g-pwr" style="width:0%"></div></div><h3>Battery</h3><div class="mr"><span class="ml">Capacity</span><span class="mv mvn" id="m-bcap">0 Ah</span></div><div class="mr"><span class="ml">Usable Energy</span><span class="mv mvn" id="m-buse">0 Wh</span></div><div class="mr"><span class="ml">Autonomy</span><span class="mv mvn" id="m-auto">&#8212; days</span></div><div class="gbar" data-label="Battery autonomy"><div class="gfill" id="g-bat" style="width:0%"></div></div><h3>Efficiency</h3><div class="mr"><span class="ml">System Eff.</span><span class="mv mvn" id="m-eff">&#8212;</span></div><div class="mr"><span class="ml">Controller</span><span class="mv mvn" id="m-ctrl">None</span></div><div class="mr"><span class="ml">Volt. Match</span><span class="mv mvn" id="m-vmatch">&#8212;</span></div><div class="gbar" data-label="System efficiency"><div class="gfill" id="g-eff" style="width:0%"></div></div></div>
     <div class="rps"><h3>Safety / NEC</h3><div class="mr"><span class="ml">Fuse/Breaker</span><span class="mv mvn" id="m-fuse">None</span></div><div class="mr"><span class="ml">Disconnect</span><span class="mv mvn" id="m-disc">None</span></div><div class="mr"><span class="ml">Ground Rod</span><span class="mv mvn" id="m-gnd">None</span></div><div class="mr"><span class="ml">Surge (SPD)</span><span class="mv mvn" id="m-spd">None</span></div>
       <div class="mr"><span class="ml">AC Breaker</span><span class="mv mvn" id="m-acb">None</span></div><div class="mr"><span class="ml">Wire Gauge</span><span class="mv mvn" id="m-wg">&#8212;</span></div><div class="mr"><span class="ml">NEC Status</span><span class="mv mvn" id="m-nec">&#8212;</span></div></div>
     <div class="rps"><h3>Scenario</h3><div class="mr"><span class="ml">Active</span><span class="mv mvn" id="m-scen">Free Build</span></div><div class="mr"><span class="ml">Goal Met</span><span class="mv mvn" id="m-goal">&#8212;</span></div></div>
@@ -509,6 +571,86 @@ function setScen(id){
   panel.classList.add('show');
 }
 function dismissScenPanel(){document.getElementById('scen-panel').classList.remove('show');}
+
+// ── SOLAR CONDITIONS ────────────────────────────────────────────────────────
+let solarCond={hour:12,sky:1.0,angleDeg:0};
+const SOLAR_PRESETS={
+  stc:      {hour:12,  sky:1.0,   angleDeg:0,  label:'STC'},
+  dawn:     {hour:6.5, sky:0.9,   angleDeg:70, label:'Dawn'},
+  morning:  {hour:9,   sky:0.95,  angleDeg:20, label:'Morning'},
+  noon:     {hour:12,  sky:0.95,  angleDeg:5,  label:'Noon'},
+  afternoon:{hour:15,  sky:0.9,   angleDeg:20, label:'Afternoon'},
+  cloudy:   {hour:12,  sky:0.38,  angleDeg:0,  label:'P.Cloudy'},
+  overcast: {hour:12,  sky:0.12,  angleDeg:0,  label:'Overcast'},
+  rain:     {hour:12,  sky:0.035, angleDeg:0,  label:'Rain'}
+};
+function getIrradianceFactor(){
+  const h=solarCond.hour;
+  const tf=(h>=6&&h<=18)?Math.sin(Math.PI*(h-6)/12):0;
+  const af=Math.max(0,Math.cos(solarCond.angleDeg*Math.PI/180));
+  return tf*solarCond.sky*af;
+}
+function getIrradiance(){return Math.round(1000*getIrradianceFactor());}
+function getSolarCondLabel(){
+  const h=solarCond.hour;
+  const hh=Math.floor(h);const mm=(h%1>=0.5)?'30':'00';
+  const ampm=hh<12?'am':'pm';const h12=hh===0?12:hh>12?hh-12:hh;
+  const tod=h===12?'Noon':(h<=6.5||h>=17.5)?'Dawn/Dusk':h<12?'Morning':'Afternoon';
+  const sky=solarCond.sky>=0.9?'Clear':solarCond.sky>=0.5?'P.Cloudy':solarCond.sky>=0.2?'Overcast':solarCond.sky>=0.08?'Heavy Clouds':'Rain';
+  const ang=solarCond.angleDeg<5?'Optimal':solarCond.angleDeg+'° tilt';
+  return h12+':'+mm+ampm+' ('+tod+') · '+sky+' · '+ang;
+}
+function updateSolarDisplay(){
+  const G=getIrradiance();
+  document.getElementById('solar-g-val').textContent='G: '+G+' W/m²';
+  document.getElementById('solar-pct-val').textContent=G+' = '+(G/10).toFixed(0)+'% STC';
+  // Update slider labels if sliders exist
+  const ts=document.getElementById('sl-time');
+  if(ts){
+    const h=solarCond.hour;
+    const hh=Math.floor(h);const mm=(h%1>=0.5)?'30':'00';
+    const ampm=hh<12?'am':'pm';const h12=hh===0?12:hh>12?hh-12:hh;
+    const tod=h===12?'Noon':(h<=6.5||h>=17.5)?'Dawn/Dusk':h<12?'Morning':'Afternoon';
+    document.getElementById('sl-time-val').textContent=h12+':'+mm+ampm+' ('+tod+')';
+    ts.value=solarCond.hour;
+    const skyPct=Math.round(solarCond.sky*100);
+    const skyLbl=skyPct>=90?'Clear Sky':skyPct>=60?'Partly Cloudy':skyPct>=25?'Overcast':skyPct>=8?'Heavy Clouds':'Heavy Rain';
+    document.getElementById('sl-sky-val').textContent=skyLbl+' ('+skyPct+'%)';
+    document.getElementById('sl-sky').value=skyPct;
+    const aoi=solarCond.angleDeg;
+    const aoiLbl=aoi<5?'Optimal':aoi<25?'Slight tilt':aoi<50?'Moderate tilt':'High tilt';
+    document.getElementById('sl-angle-val').textContent=aoi+'° ('+aoiLbl+')';
+    document.getElementById('sl-angle').value=aoi;
+  }
+  // Always keep irradiance metrics in the right panel current
+  setMV('m-irr',G+' W/m²',G>=900?'mvg':G>=300?'mvw':'mvb');
+  setMV('m-cond',getSolarCondLabel(),'mvn');
+}
+function setSolarPreset(id){
+  const p=SOLAR_PRESETS[id];if(!p)return;
+  solarCond.hour=p.hour;solarCond.sky=p.sky;solarCond.angleDeg=p.angleDeg;
+  document.querySelectorAll('.spr').forEach(b=>b.classList.remove('on'));
+  const btn=document.getElementById('spr-'+id);if(btn)btn.classList.add('on');
+  updateSolarDisplay();
+}
+function toggleSolarAdj(){
+  const sl=document.getElementById('solar-sliders');
+  const btn=document.getElementById('solar-adj-btn');
+  const open=sl.style.display==='none';
+  sl.style.display=open?'':'none';
+  sl.setAttribute('aria-hidden',open?'false':'true');
+  btn.classList.toggle('on',open);
+  btn.setAttribute('aria-expanded',open?'true':'false');
+  btn.innerHTML=open?'&#9650; Adjust':'&#9660; Adjust';
+}
+function onSolarSlide(){
+  solarCond.hour=parseFloat(document.getElementById('sl-time').value);
+  solarCond.sky=parseFloat(document.getElementById('sl-sky').value)/100;
+  solarCond.angleDeg=parseFloat(document.getElementById('sl-angle').value);
+  document.querySelectorAll('.spr').forEach(b=>b.classList.remove('on'));
+  updateSolarDisplay();
+}
+
 let comps=[],wires=[],nid=1,wireMode=false,wFrom=null,lastM={},wgFaultIds=new Set();
 const TICONS={solar:'S',battery:'B',controller:'C',inverter:'I',load:'L',fuse:'F',disconnect:'D',ground:'G',combiner:'CB',surge:'SP',acbreaker:'ACB'};
 const LICONS={'load-led':'L','load-fan':'F','load-fridge':'Fr','load-phone':'P','load-ev':'EV','load-proj':'Pr'};
@@ -613,8 +755,9 @@ function computeWireCurrents(){
   const I=comps.filter(c=>c.type==='inverter');
   const L=comps.filter(c=>c.type==='load');
   const batV=B.length?parseFloat(B[0].data.voltage):12;
-  const panIsc=P.reduce((s,p)=>s+parseFloat(p.data.isc||0),0);
-  const panW=P.reduce((s,p)=>s+parseFloat(p.data.watts||0),0);
+  const _irrF=getIrradianceFactor();
+  const panIsc=P.reduce((s,p)=>s+parseFloat(p.data.isc||0),0)*_irrF;
+  const panW=P.reduce((s,p)=>s+parseFloat(p.data.watts||0),0)*_irrF;
   const chargeA=batV>0?panW/batV:0;           // charging current to battery
   const peakLoadW=L.reduce((s,l)=>s+parseFloat(l.data.watts||0),0);
   const dischargeA=batV>0?peakLoadW/batV:0;   // discharge current from battery
@@ -1063,8 +1206,13 @@ function analyze(){
     SP=comps.filter(c=>c.type==='surge'),CB=comps.filter(c=>c.type==='combiner'),ACB=comps.filter(c=>c.type==='acbreaker');
   const fb=[];let score=100;
   const panW=P.reduce((s,p)=>s+parseFloat(p.data.watts),0);
+  const irrFactor=getIrradianceFactor();
+  const irrWm2=getIrradiance();
+  const effectivePanW=panW*irrFactor;
   const avgVoc=P.length?P.reduce((s,p)=>s+parseFloat(p.data.voc),0)/P.length:0;
-  const dailyGen=panW*5;
+  const dailyAdjFactor=solarCond.sky*Math.max(0,Math.cos(solarCond.angleDeg*Math.PI/180));
+  const dailyGen=panW*5*dailyAdjFactor;
+  const stcDailyGen=panW*5;
   const batV=B.length?parseFloat(B[0].data.voltage):0;
   const batCapAh=B.reduce((s,b)=>s+parseFloat(b.data.capacity),0);
   const batDod=B.length?parseFloat(B[0].data.dod)/100:0.5;
@@ -1111,7 +1259,8 @@ function analyze(){
   if(B.length>0&&F.length===0){fb.push({t:'fhz',i:'!',m:'ARC FLASH RISK: Batteries can deliver thousands of amps into a short. Without fuses this causes burns and fire.'});score-=10;}
   if(P.length===0){fb.push({t:'fbd',i:'x',m:'No solar panels. Add at least one.'});score-=40;}
   else{
-    fb.push({t:'fok',i:'v',m:P.length+' panel(s): '+panW+'W, ~'+dailyGen.toFixed(0)+' Wh/day (5 peak sun hrs).'});
+    fb.push({t:'fok',i:'v',m:P.length+' panel(s): '+panW+'W rated (STC). At '+irrWm2+' W/m²: '+effectivePanW.toFixed(0)+'W now. Est. '+dailyGen.toFixed(0)+' Wh/day'+(irrFactor<0.99?' (STC: '+stcDailyGen.toFixed(0)+' Wh/day)':'')+'.'});
+    if(irrFactor<0.99)fb.push({t:'fin',i:'i',m:'Solar conditions: '+getSolarCondLabel()+'. Current irradiance '+irrWm2+' W/m² vs STC 1000 W/m². Energy balance and scenario goals reflect current conditions. Click STC ★ to evaluate at standard test conditions.'});
     if(P.length>2&&CB.length===0){fb.push({t:'fwn',i:'!',m:P.length+' panels without a combiner box. NEC 690.9(B): 3+ parallel strings each need their own string fuse to prevent back-feed through a shorted panel. Use a combiner box with per-string fusing.'});score-=8;}
     const effs=P.map(p=>parseFloat(p.data.efficiency));
     if(P.length>1&&Math.max(...effs)-Math.min(...effs)>3){fb.push({t:'fwn',i:'!',m:'Mismatched efficiencies ('+Math.min(...effs)+'%-'+Math.max(...effs)+'%). Weakest panel limits the string.'});score-=5;}
@@ -1412,8 +1561,10 @@ function analyze(){
   const sr=SCENS[activeScen].check(comps,M);
   setMV('m-scen',SCENS[activeScen].name,'mvn');
   setMV('m-goal',sr.met?'Complete':'Incomplete: '+sr.msg,sr.met?'mvg':'mvw');
-  setMV('m-pw',panW+' W',panW>0?'mvg':'mvn');
-  setMV('m-gen',dailyGen.toFixed(0)+' Wh/day',dailyGen>=dailyLoad&&dailyLoad>0?'mvg':(dailyLoad>0?'mvb':'mvn'));
+  setMV('m-irr',irrWm2+' W/m²',irrWm2>=900?'mvg':irrWm2>=300?'mvw':'mvb');
+  setMV('m-cond',getSolarCondLabel(),'mvn');
+  setMV('m-pw',effectivePanW.toFixed(0)+'W'+(irrFactor<0.99?' (STC: '+panW+'W)':''),panW>0?'mvg':'mvn');
+  setMV('m-gen',dailyGen.toFixed(0)+' Wh/day'+(irrFactor<0.99?' (STC: '+stcDailyGen.toFixed(0)+')':''),dailyGen>=dailyLoad&&dailyLoad>0?'mvg':(dailyLoad>0?'mvb':'mvn'));
   setMV('m-cons',dailyLoad.toFixed(0)+' Wh/day','mvn');
   setMV('m-bcap',batCapAh+' Ah','mvn');
   setMV('m-buse',usableWh.toFixed(0)+' Wh','mvn');
@@ -1457,7 +1608,7 @@ function analyze(){
   const batSafeNote=B.length===0?'No battery':
     batSafeHazards.length>0?batSafeHazards[0].m.substring(0,60)+'...':
     (B[0]?.data.chemistry||'Unknown')+' -- chemistry OK';
-  lastM={score,grade:gr,panW,dailyGen,dailyLoad,usableWh,auto,sysEff,F:F.length,D:D.length,G:G.length,SP:SP.length,ACB:ACB.length,wgIssues,fb,sr,scen:activeScen,batSafe,batSafeNote};
+  lastM={score,grade:gr,panW,effectivePanW,irrWm2,stcDailyGen,dailyGen,dailyLoad,usableWh,auto,sysEff,F:F.length,D:D.length,G:G.length,SP:SP.length,ACB:ACB.length,wgIssues,fb,sr,scen:activeScen,batSafe,batSafeNote};
   showTab('feedback');
 
   // Apply fire/spark visual state to components involved in hazards
@@ -1508,7 +1659,7 @@ function showRubric(){
   const m=lastM,now=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   const gc={A:'#1B5E20',B:'#33691E',C:'#E65100',D:'#BF360C',F:'#B71C1C'};
   const rows=[
-    {c:'Solar Panels',p:m.panW>0?10:0,x:10,n:m.panW>0?m.panW+'W, ~'+(m.dailyGen||0).toFixed(0)+' Wh/day':'No panels'},
+    {c:'Solar Panels',p:m.panW>0?10:0,x:10,n:m.panW>0?m.panW+'W STC / '+(m.effectivePanW||m.panW).toFixed(0)+'W at '+(m.irrWm2||1000)+' W/m². Est. '+(m.stcDailyGen||m.dailyGen||0).toFixed(0)+' Wh/day (STC)':'No panels'},
     {c:'Charge Controller',p:(m.sysEff||0)>80?10:(m.sysEff||0)>65?7:4,x:10,n:m.sysEff?'Efficiency: '+m.sysEff.toFixed(1)+'%':'Not evaluated'},
     {c:'Battery Storage',p:(m.auto||0)>=2?15:(m.auto||0)>=1?10:(m.auto||0)>0?5:0,x:15,n:(m.usableWh||0)>0?(m.usableWh.toFixed(0)+' Wh usable, '+(m.auto||0).toFixed(1)+' day autonomy'):'No battery'},
     {c:'Battery Chemistry / NEC 480',p:m.batSafe===undefined?3:m.batSafe?5:0,x:5,n:m.batSafeNote||'Not evaluated'},
@@ -1536,6 +1687,7 @@ function showRubric(){
 }
 function resetUI(){
   ['m-pw','m-gen','m-cons','m-bcap','m-buse','m-auto','m-eff','m-ctrl','m-vmatch','m-fuse','m-disc','m-gnd','m-spd','m-acb','m-wg','m-nec','m-scen','m-goal'].forEach(id=>setMV(id,'--','mvn'));
+  updateSolarDisplay();
   document.getElementById('gbadge').textContent='--';document.getElementById('gbadge').className='gbadge g0';
   document.getElementById('glbl').textContent='Add components to begin';
   ['g-pwr','g-bat','g-eff'].forEach(id=>{const e=document.getElementById(id);if(e){e.style.width='0%';e.style.background='var(--info)';}});
@@ -1992,6 +2144,9 @@ function importDesign(input){
   reader.readAsText(file);
   input.value='';
 }
+
+// Initialize solar display on load
+updateSolarDisplay();
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
