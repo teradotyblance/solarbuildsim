@@ -1,4 +1,3 @@
-<!--Created with Claude Sonnet web interface Added revision 35 to github-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -95,6 +94,12 @@ header h1{font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:700;co
 .wl{stroke:var(--wire-live);stroke-width:3;fill:none;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(0,229,255,0.5));}
 .wf{stroke:var(--wire-fault);stroke-width:3;fill:none;stroke-linecap:round;filter:drop-shadow(0 0 4px rgba(255,107,107,0.6));stroke-dasharray:8,4;}
 .wt{stroke:rgba(255,255,255,0.3);stroke-width:2;fill:none;stroke-dasharray:6,4;}
+/* Current labels on wires */
+.wire-label{font-family:'Share Tech Mono',monospace;font-size:9px;fill:var(--text);pointer-events:none;dominant-baseline:middle;text-anchor:middle;}
+.wire-label-bg{fill:rgba(8,12,24,0.82);rx:3;pointer-events:none;}
+/* Hide labels when Wire Mode is active (hit targets would overlap) */
+#wsvg.wire-mode .wire-label,.wire-mode .wire-label-bg{display:none;}
+@media (prefers-reduced-motion:reduce){.wire-label,.wire-label-bg{opacity:0.6;}}
 .wsvg-path{stroke-width:8;opacity:0;pointer-events:stroke;cursor:pointer;fill:none;}
 .wb{stroke:var(--wire-bond);stroke-width:2;fill:none;stroke-linecap:round;stroke-dasharray:6,3;filter:drop-shadow(0 0 3px rgba(126,200,126,0.5));}
 .wspd{stroke:var(--wire-spd);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-dasharray:2,4;opacity:0.75;}
@@ -138,6 +143,11 @@ header h1{font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:700;co
 .port:hover{transform:scale(1.6);}.port.used{background:var(--wire-live)!important;border-color:var(--wire-live)!important;}
 .plbl{font-size:0.62rem;color:var(--dim);font-family:'Share Tech Mono',monospace;font-weight:700;}
 .pw{display:flex;flex-direction:column;align-items:center;gap:1px;}
+/* Voltage badge shown on component cards after analyze */
+.cv-volt{position:absolute;bottom:3px;right:4px;font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--sun);background:rgba(8,12,24,0.85);padding:1px 4px;border-radius:3px;border:1px solid rgba(255,217,74,0.3);pointer-events:none;line-height:1.4;white-space:nowrap;}
+.cv-volt.vg{color:var(--ok);border-color:rgba(93,216,122,0.3);}
+.cv-volt.vw{color:var(--warn);border-color:rgba(255,179,64,0.3);}
+.cv-volt.vb{color:var(--danger);border-color:rgba(255,107,107,0.3);}
 .cvdel{position:absolute;top:-7px;right:-7px;width:15px;height:15px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;font-size:0.6rem;line-height:15px;text-align:center;display:none;z-index:30;}
 .cv:hover .cvdel{display:block;}
 .rp{width:var(--rp-w);min-width:var(--rp-w);background:var(--panel-bg);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
@@ -172,6 +182,35 @@ header h1{font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:700;co
 .hbox p{font-size:0.8rem;line-height:1.55;color:var(--text);margin-bottom:8px;}
 .htip{background:var(--card-bg);border-left:3px solid var(--warn);padding:6px 8px;border-radius:3px;font-size:0.74rem;color:var(--warn);margin-bottom:11px;}
 .hclose{width:100%;padding:6px;background:var(--info);color:#000;border:none;border-radius:4px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.82rem;letter-spacing:1px;cursor:pointer;text-transform:uppercase;}
+/* Save/Load modal */
+.slmod{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;}
+.slmod.show{display:flex;}
+.slbox{background:var(--panel-bg);border:1px solid var(--border);border-radius:8px;padding:20px;max-width:560px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.slbox h2{font-family:'Rajdhani',sans-serif;font-size:1.05rem;color:var(--text);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.slbox h2 button{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:1rem;padding:2px 6px;border-radius:3px;}
+.slbox h2 button:hover{color:var(--danger);}
+.sl-save-row{display:flex;gap:8px;margin-bottom:14px;}
+.sl-input{flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Exo 2',sans-serif;font-size:0.8rem;padding:6px 10px;outline:none;}
+.sl-input:focus{border-color:var(--info);}
+.sl-input::placeholder{color:var(--dim);}
+.sl-savebtn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.76rem;letter-spacing:1px;padding:6px 14px;border:none;border-radius:4px;cursor:pointer;text-transform:uppercase;background:var(--ok);color:#000;white-space:nowrap;}
+.sl-savebtn:hover{filter:brightness(1.1);}
+.sl-list{display:flex;flex-direction:column;gap:6px;max-height:380px;overflow-y:auto;}
+.sl-empty{text-align:center;color:var(--dim);font-size:0.78rem;padding:20px 0;}
+.sl-card{background:var(--card-bg);border:1px solid var(--border);border-radius:5px;padding:8px 10px;display:flex;align-items:center;gap:8px;transition:border-color 0.12s;}
+.sl-card:hover{border-color:var(--info);}
+.sl-card-info{flex:1;min-width:0;}
+.sl-card-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.86rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sl-card-meta{font-size:0.66rem;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sl-card-btns{display:flex;gap:4px;flex-shrink:0;}
+.sl-lb{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:0.68rem;letter-spacing:1px;padding:3px 8px;border-radius:3px;cursor:pointer;text-transform:uppercase;border:none;}
+.sl-load{background:rgba(91,168,255,0.12);color:var(--info);border:1px solid var(--info);}
+.sl-load:hover{background:var(--info);color:#000;}
+.sl-del{background:rgba(255,107,107,0.08);color:var(--danger);border:1px solid var(--danger);}
+.sl-del:hover{background:var(--danger);color:#fff;}
+.sl-exp{background:rgba(255,179,64,0.08);color:var(--warn);border:1px solid var(--warn);}
+.sl-exp:hover{background:var(--warn);color:#000;}
+.sl-hint{font-size:0.66rem;color:var(--dim);text-align:center;margin-top:10px;}
 .rmod{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;}
 .rmod.show{display:flex;}
 .rbox{background:#fff;color:#111;border-radius:8px;padding:22px;max-width:640px;width:100%;font-family:'Exo 2',sans-serif;}
@@ -269,6 +308,26 @@ select:focus-visible{outline:2px solid var(--sun);outline-offset:1px;}
 </head>
 <body>
 <a href="#cvwrap" class="skip-link">Skip to canvas</a>
+<div class="slmod" id="slmod" role="dialog" aria-modal="true" aria-label="Save and load designs">
+  <div class="slbox">
+    <h2>&#128190; Save / Load Design
+      <button onclick="closeSaveLoad()" aria-label="Close">&#x2715;</button>
+    </h2>
+    <div class="sl-save-row">
+      <input class="sl-input" id="sl-name" type="text" maxlength="40" placeholder="Name this design (e.g. Cabin v1)..." aria-label="Design name"/>
+      <button class="sl-savebtn" onclick="saveDesign()" aria-label="Save current design">&#128190; Save Current</button>
+    </div>
+    <div class="sl-list" id="sl-list" role="list" aria-label="Saved designs"></div>
+    <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+      <button class="sl-lb sl-exp" style="flex:1" onclick="exportCurrent()" aria-label="Export current canvas as JSON file" title="Download current canvas as a .json file">&#8675; Export Current as File</button>
+      <label class="sl-lb sl-load" style="flex:1;text-align:center;cursor:pointer" aria-label="Import a design from JSON file" title="Load a .json file exported from this simulation">
+        &#8673; Import from File
+        <input type="file" accept=".json" style="display:none" onchange="importDesign(this)" aria-label="Choose JSON file to import"/>
+      </label>
+    </div>
+    <p class="sl-hint">Saved to this browser only. Use Export/Import to share between devices or submit to your instructor.</p>
+  </div>
+</div>
 <div class="hmod" id="hmod"><div class="hbox"><h2 id="htitle">Hint</h2><p id="hbody"></p><div class="htip" id="htip"></div><button class="hclose" onclick="closeHint()">Got It</button></div></div>
 <div class="rmod" id="rmod"><div class="rbox"><h1>Solar System Design Rubric</h1><div class="rmeta" id="rmeta"></div><div id="rbody"></div><div class="rbtns"><button class="rprint" onclick="printRubric()">Print / Save PDF</button><button class="rclose" onclick="document.getElementById('rmod').classList.remove('show')">Close</button></div></div></div>
 <div id="spot-ring"></div>
@@ -278,6 +337,7 @@ select:focus-visible{outline:2px solid var(--sun);outline-offset:1px;}
   <h1>Solar System Builder</h1>
   <span class="hv">v2.0</span>
   <div class="hbtns">
+    <button class="btn" style="background:#0A1A2A;color:#7EC87E;border:1px solid #7EC87E;" onclick="openSaveLoad()" title="Save or load a design" aria-label="Save or load design">&#128190; Save / Load</button>
     <button class="btn btn-wire" id="bwire" onclick="toggleWire()" title="Wire Mode: click ports to connect, click a wire to delete it">&#128268; Wire Mode</button>
     <button class="btn btn-run" onclick="analyze()">&#9889; Analyze</button>
     <button class="btn btn-hint" onclick="showHint()">&#128161; Hint</button>
@@ -484,7 +544,7 @@ function addComp(data,x,y){
       +'<div class="pw"><div class="port pneg" id="'+id+'-batneg" data-c="'+id+'" data-p="batneg" onclick="portClick(event)" aria-label="Battery negative output (BAT-)" role="button" tabindex="0"></div><span class="plbl" style="font-size:0.52rem">BAT-</span></div>'
       +bondPort+'</div>'
     :'<div class="ports"><div class="pw"><div class="port ppos" id="'+id+'-pos" data-c="'+id+'" data-p="pos" onclick="portClick(event)" aria-label="'+(isPassThru?'IN terminal, current enters from source side':'Positive terminal (+), click in Wire Mode to connect')+'" role="button" tabindex="0"></div><span class="plbl">'+(isPassThru?'IN':'+')+'</span></div><div class="pw"><div class="port pneg" id="'+id+'-neg" data-c="'+id+'" data-p="neg" onclick="portClick(event)" aria-label="'+(isPassThru?'OUT terminal, current exits toward load side':'Negative terminal (-), click in Wire Mode to connect')+'" role="button" tabindex="0"></div><span class="plbl">'+(isPassThru?'OUT':'-')+'</span></div>'+bondPort+'</div>';
-  el.innerHTML='<button class="cvdel" onclick="delComp(\''+id+'\')" aria-label="Remove">x</button><div class="cvh"><span class="cvi">'+icon(data.type,data.id)+'</span><span class="cvn" style="color:'+(TCOLOR[data.type]||'var(--text)')+'">'+data.name+'</span></div><div class="cvs">'+specs(data)+'</div>'+gH+pH;
+  el.innerHTML='<button class="cvdel" onclick="delComp(\''+id+'\')" aria-label="Remove">x</button><div class="cvh"><span class="cvi">'+icon(data.type,data.id)+'</span><span class="cvn" style="color:'+(TCOLOR[data.type]||'var(--text)')+'">'+data.name+'</span></div><div class="cvs">'+specs(data)+'</div>'+gH+pH+'<span class="cv-volt" id="volt-'+id+'" aria-live="polite" style="display:none"></span>';
   makeDrag(el);document.getElementById('cvwrap').appendChild(el);comp.el=el;comps.push(comp);
 }
 function setG(id,v){const c=comps.find(x=>x.id===id);if(c)c.gauge=v;}
@@ -543,6 +603,189 @@ function cancelWire(){if(wFrom){wFrom.el.style.transform='';wFrom.el.style.boxSh
 function tmpMove(e){if(!wFrom)return;const pr=wFrom.el.getBoundingClientRect(),wr=document.getElementById('cvwrap').getBoundingClientRect();const x1=pr.left+pr.width/2-wr.left,y1=pr.top+pr.height/2-wr.top;rmTmp();const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('class','wt');p.setAttribute('id','twire');const cx=(x1+e.clientX-wr.left)/2;p.setAttribute('d','M'+x1+','+y1+' C'+cx+','+y1+' '+cx+','+(e.clientY-wr.top)+' '+(e.clientX-wr.left)+','+(e.clientY-wr.top));document.getElementById('wsvg').appendChild(p);}
 function rmTmp(){const t=document.getElementById('twire');if(t)t.remove();}
 function ptCenter(cid,port){const el=document.getElementById(cid+'-'+port);if(!el)return null;const pr=el.getBoundingClientRect(),wr=document.getElementById('cvwrap').getBoundingClientRect();return{x:pr.left+pr.width/2-wr.left,y:pr.top+pr.height/2-wr.top};}
+// Compute expected current (amps) for each wire based on connected components.
+// Stored on w.amps so drawWires can render the label.
+// Called after analyze() and whenever liveness changes.
+function computeWireCurrents(){
+  const P=comps.filter(c=>c.type==='solar');
+  const B=comps.filter(c=>c.type==='battery');
+  const C=comps.filter(c=>c.type==='controller');
+  const I=comps.filter(c=>c.type==='inverter');
+  const L=comps.filter(c=>c.type==='load');
+  const batV=B.length?parseFloat(B[0].data.voltage):12;
+  const panIsc=P.reduce((s,p)=>s+parseFloat(p.data.isc||0),0);
+  const panW=P.reduce((s,p)=>s+parseFloat(p.data.watts||0),0);
+  const chargeA=batV>0?panW/batV:0;           // charging current to battery
+  const peakLoadW=L.reduce((s,l)=>s+parseFloat(l.data.watts||0),0);
+  const dischargeA=batV>0?peakLoadW/batV:0;   // discharge current from battery
+  const invInV=I.length?parseFloat(I[0].data.inputv||batV):batV;
+  const invW=I.length?parseFloat(I[0].data.watts||0):0;
+  const invInA=invInV>0?invW/invInV:0;         // inverter input current (DC side)
+  const invOutV=I.length?parseFloat(I[0].data.outputv||120):120;
+  const invOutA=invOutV>0?invW/invOutV:0;      // inverter output current (AC side)
+
+  wires.forEach(w=>{
+    if(w.hz==='bond'||w.hz==='gnd'){w.amps=0;return;}
+    const ca=comps.find(x=>x.id===w.a);
+    const cb=comps.find(x=>x.id===w.b);
+    if(!ca||!cb){w.amps=null;return;}
+    const types=[ca.type,cb.type];
+    const ports=[w.ap,w.bp];
+
+    // SPD parallel tap — no normal current
+    if(types.includes('surge')){w.amps=0;return;}
+
+    // Panel side: solar to fuse or controller PV+
+    if(types.includes('solar')&&(types.includes('fuse')||ports.includes('pvpos')||ports.includes('pvneg'))){
+      w.amps=panIsc>0?panIsc:panW/batV;return;
+    }
+
+    // Controller BAT+ or BAT- to battery
+    if(types.includes('controller')&&types.includes('battery')){
+      w.amps=chargeA;return;
+    }
+
+    // Battery to fuse/disconnect (discharge path, positive rail)
+    if(types.includes('battery')&&types.includes('fuse')&&!types.includes('solar')&&!types.includes('controller')){
+      w.amps=dischargeA;return;
+    }
+    if(types.includes('battery')&&types.includes('disconnect')){
+      w.amps=dischargeA;return;
+    }
+
+    // Fuse to fuse, fuse to disconnect, disconnect to disconnect
+    if(types.every(t=>['fuse','disconnect','acbreaker'].includes(t))){
+      w.amps=dischargeA;return;
+    }
+
+    // Fuse or disconnect to individual load
+    if((types.includes('fuse')||types.includes('disconnect'))&&types.includes('load')){
+      const load=ca.type==='load'?ca:cb;
+      const lw=parseFloat(load.data.watts||0);
+      const lv=parseFloat(load.data.voltage||batV);
+      w.amps=lv>0?lw/lv:0;return;
+    }
+
+    // Disconnect or fuse to inverter
+    if(types.includes('inverter')&&(types.includes('fuse')||types.includes('disconnect')||types.includes('battery'))){
+      w.amps=invInA;return;
+    }
+
+    // Inverter to AC breaker or AC load
+    if(types.includes('inverter')&&(types.includes('acbreaker')||types.includes('load'))){
+      w.amps=invOutA;return;
+    }
+
+    // Load return to battery (negative return path)
+    if(types.includes('load')&&types.includes('battery')){
+      const load=ca.type==='load'?ca:cb;
+      const lw=parseFloat(load.data.watts||0);
+      const lv=parseFloat(load.data.voltage||batV);
+      w.amps=lv>0?lw/lv:0;return;
+    }
+
+    // Panel return to battery or controller (charging negative return)
+    if(types.includes('solar')&&types.includes('battery')){
+      w.amps=chargeA;return;
+    }
+
+    w.amps=null; // unknown — don't label
+  });
+}
+
+// Compute and display expected voltage across each component.
+// Shown as a badge on the component card. Only meaningful when system is live.
+function computeComponentVoltages(){
+  const P=comps.filter(x=>x.type==='solar');
+  const B=comps.filter(x=>x.type==='battery');
+  const C=comps.filter(x=>x.type==='controller');
+  const I=comps.filter(x=>x.type==='inverter');
+  const sysLive=comps.some(x=>x.type==='solar')&&comps.some(x=>x.type==='battery')&&comps.some(x=>x.type==='controller');
+
+  const batV=B.length?parseFloat(B[0].data.voltage):0;
+  const avgVoc=P.length?P.reduce((s,p)=>s+parseFloat(p.data.voc||0),0)/P.length:0;
+  const pvOperV=avgVoc*0.85;  // Vmp approx = 85% of Voc
+  const invInV=I.length?parseFloat(I[0].data.inputv||batV):batV;
+  const invOutV=I.length?parseFloat(I[0].data.outputv||120):120;
+
+  comps.forEach(comp=>{
+    const el=document.getElementById('volt-'+comp.id);
+    if(!el)return;
+    if(!sysLive){el.style.display='none';return;}
+
+    let vText=null,vClass='';
+    switch(comp.type){
+      case 'solar':
+        // Show operating voltage (Vmp) and open-circuit voltage (Voc)
+        vText=pvOperV.toFixed(1)+'V op / '+avgVoc.toFixed(1)+'V oc';
+        vClass='';
+        break;
+      case 'battery':
+        vText=batV+'V nominal';
+        vClass='vg';
+        break;
+      case 'controller':
+        // PV side and BAT side voltages
+        vText='PV: '+pvOperV.toFixed(1)+'V  BAT: '+batV+'V';
+        // Flag overvoltage
+        const maxVoc=parseFloat(comp.data.maxvoc||50);
+        vClass=avgVoc>maxVoc?'vb':avgVoc>maxVoc*0.9?'vw':'vg';
+        break;
+      case 'inverter':
+        vText=invInV+'VDC → '+invOutV+'VAC';
+        vClass='';
+        break;
+      case 'fuse':
+      case 'disconnect':
+      case 'acbreaker':
+        // Pass-through: show voltage at that node
+        // Charging side fuses see panel voltage; discharge side see battery voltage
+        // Determine by checking connected component types via wires
+        const fNeighbors=wires
+          .filter(w=>w.a===comp.id||w.b===comp.id)
+          .map(w=>comps.find(x=>x.id===(w.a===comp.id?w.b:w.a)))
+          .filter(Boolean);
+        const fTypes=fNeighbors.map(n=>n.type);
+        if(fTypes.includes('solar')||fTypes.includes('controller')){
+          const nearCtrl=fTypes.includes('controller');
+          vText=(nearCtrl?pvOperV.toFixed(1):avgVoc.toFixed(1))+'V';
+        } else {
+          vText=batV+'V';
+        }
+        vClass='';
+        break;
+      case 'load':{
+        const lv=parseFloat(comp.data.voltage||0);
+        const lw=parseFloat(comp.data.watts||0);
+        vText=lv+'V / '+(lv>0?(lw/lv).toFixed(2)+'A':'--');
+        // Flag AC loads without inverter
+        vClass=lv>=120&&I.length===0?'vb':'';
+        break;
+      }
+      case 'combiner':
+        vText=avgVoc.toFixed(1)+'V string';
+        vClass='';
+        break;
+      case 'surge':
+        vText=batV+'V monitor';
+        vClass='';
+        break;
+      case 'ground':
+        vText='0V ref';
+        vClass='';
+        break;
+      default:
+        el.style.display='none';return;
+    }
+    if(vText){
+      el.textContent=vText;
+      el.className='cv-volt'+(vClass?' '+vClass:'');
+      el.style.display='';
+      el.setAttribute('aria-label',comp.data.name+': '+vText);
+    }
+  });
+}
+
 // Recompute w.live for every wire based on actual circuit connectivity.
 // A wire is live only when a complete closed loop exists:
 //   CHARGING LOOP: panel -> [fuse] -> controller(PV+) ... controller(BAT+) -> battery -> controller(BAT-) or panel(-)
@@ -621,11 +864,13 @@ function updateLiveness(){
     const shouldBeLive=sysLive&&!w.hz&&!isSPDwire&&(!isLoadSide||dischargeLoopClosed);
     w.live=shouldBeLive;
   });
+  computeWireCurrents();
+  computeComponentVoltages();
 }
 
 function drawWires(){
   const svg=document.getElementById('wsvg');
-  svg.querySelectorAll('.wi,.wl,.wf,.wb,.whit,.flow-grp').forEach(w=>w.remove());
+  svg.querySelectorAll('.wi,.wl,.wf,.wb,.wspd,.whit,.flow-grp,.wire-label,.wire-label-bg').forEach(w=>w.remove());
   wires.forEach(w=>{
     const p1=ptCenter(w.a,w.ap),p2=ptCenter(w.b,w.bp);if(!p1||!p2)return;
     const d='M'+p1.x+','+p1.y+' C'+((p1.x+p2.x)/2)+','+p1.y+' '+((p1.x+p2.x)/2)+','+p2.y+' '+p2.x+','+p2.y;
@@ -688,6 +933,26 @@ function drawWires(){
     hit.addEventListener('mouseenter',e=>{if(wireMode)path.style.opacity='0.45';});
     hit.addEventListener('mouseleave',e=>{path.style.opacity='';});
     svg.appendChild(hit);
+
+    // Current label — show amps on live wires after analyze() has run
+    if(w.live&&w.amps!=null&&w.amps>0&&!wireMode){
+      const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+      const label=w.amps>=1?w.amps.toFixed(1)+'A':(w.amps*1000).toFixed(0)+'mA';
+      // Background pill
+      const bg=document.createElementNS('http://www.w3.org/2000/svg','rect');
+      const tw=label.length*5.5+6;
+      bg.setAttribute('x',mx-tw/2);bg.setAttribute('y',my-7);
+      bg.setAttribute('width',tw);bg.setAttribute('height',13);
+      bg.setAttribute('rx',3);bg.setAttribute('class','wire-label-bg');
+      svg.appendChild(bg);
+      // Text
+      const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('x',mx);txt.setAttribute('y',my+0.5);
+      txt.setAttribute('class','wire-label');
+      txt.setAttribute('aria-label',label+' flowing on this wire');
+      txt.textContent=label;
+      svg.appendChild(txt);
+    }
   });
 }
 
@@ -788,7 +1053,7 @@ function deleteWire(wid){
 function doHint(title,body,tip){document.getElementById('htitle').textContent=title;document.getElementById('hbody').textContent=body;document.getElementById('htip').textContent='Tip: '+tip;document.getElementById('hmod').classList.add('show');}
 function closeHint(){document.getElementById('hmod').classList.remove('show');}
 function showHint(){const p=comps.filter(c=>c.type==='solar'),b=comps.filter(c=>c.type==='battery'),ctrl=comps.filter(c=>c.type==='controller'),f=comps.filter(c=>c.type==='fuse'),g=comps.filter(c=>c.type==='ground'),d=comps.filter(c=>c.type==='disconnect'),inv=comps.filter(c=>c.type==='inverter'),l=comps.filter(c=>c.type==='load');if(comps.length===0)doHint('Getting Started','Drag a Solar Panel onto the canvas.','The 100W panel is a great starting choice.');else if(p.length===0)doHint('Add Solar Panels','No panels yet.','Multiple panels can wire in series (adds voltage) or parallel (adds current).');else if(ctrl.length===0)doHint('Add Charge Controller','Without one, raw panel voltage will overcharge and destroy the battery.','MPPT harvests up to 30% more energy than PWM.');else if(f.length===0)doHint('Add Fuses','NEC 690.9 requires fuses on all conductors.','Add one between panels and controller, another between battery and loads.');else if(b.length===0)doHint('Add a Battery','No battery means no power at night.','LiFePO4: 80% DoD, 97% efficiency, 2000+ cycles.');else if(g.length===0)doHint('Add Ground Rod','Without grounding a fault puts voltage on metal frames.','Ground rod creates safe fault current path to earth.');else if(d.length===0)doHint('Add Disconnect Switch','NEC 690.13 requires manual disconnect.','Place between battery and loads.');else if(l.length===0)doHint('Add Loads','Add appliances to evaluate energy balance.','Daily Wh = watts x hours/day.');else if(inv.length===0&&l.some(x=>parseFloat(x.data.voltage)>=120))doHint('Add Inverter','AC loads need an inverter.','Match inverter input voltage to battery bank voltage.');else doHint('Ready to Analyze!','Click Analyze for score and safety audit.','Check Feedback tab for improvements.');}
-function clearAll(){comps.forEach(c=>{c.el.classList.remove('on-fire');c.el.remove();});comps=[];wires=[];document.getElementById('wsvg').querySelectorAll('.wi,.wl,.wf,.flow-grp').forEach(w=>w.remove());document.getElementById('hint0').style.display='block';resetUI();}
+function clearAll(){comps.forEach(c=>{c.el.classList.remove('on-fire');const ve=document.getElementById('volt-'+c.id);if(ve)ve.style.display='none';c.el.remove();});comps=[];wires=[];document.getElementById('wsvg').querySelectorAll('.wi,.wl,.wf,.wb,.wspd,.flow-grp,.wire-label,.wire-label-bg').forEach(w=>w.remove());document.getElementById('hint0').style.display='block';resetUI();}
 function showTab(n){['metrics','feedback','guide'].forEach(t=>{document.getElementById('tc-'+t).style.display=t===n?'block':'none';document.getElementById('t-'+t).classList.toggle('on',t===n);});}
 function analyze(){
   const P=comps.filter(c=>c.type==='solar'),B=comps.filter(c=>c.type==='battery'),
@@ -1186,7 +1451,7 @@ function analyze(){
     d.setAttribute('role','listitem');
     fl.appendChild(d);
   });
-  updateLiveness();drawWires();
+  computeWireCurrents();computeComponentVoltages();updateLiveness();drawWires();
   const batSafeHazards=fb.filter(f=>f.t==='fhz'&&(f.m.includes('MIXED BATTERY')||f.m.includes('INCOMPATIBLE')||f.m.includes('VENTING REQUIRED')));
   const batSafe=B.length===0?undefined:batSafeHazards.length===0;
   const batSafeNote=B.length===0?'No battery':
@@ -1563,12 +1828,178 @@ function printRubric(){
   setTimeout(()=>w.print(),400);
 }
 
+// ── SAVE / LOAD ────────────────────────────────────────────────────────────
+// Uses localStorage for persistence within the same browser.
+// Export/Import allows JSON file backup and cross-device sharing.
+const STORAGE_PREFIX='solar_design:';
+
+function openSaveLoad(){
+  renderSaveList();
+  document.getElementById('slmod').classList.add('show');
+  setTimeout(()=>document.getElementById('sl-name').focus(),50);
+}
+function closeSaveLoad(){document.getElementById('slmod').classList.remove('show');}
+
+function saveDesign(){
+  const nameEl=document.getElementById('sl-name');
+  const name=(nameEl.value||'Untitled Design').trim().substring(0,40);
+  if(!comps.length){alert('Nothing to save -- add some components first.');return;}
+  const key=STORAGE_PREFIX+Date.now();
+  const data={
+    name,
+    savedAt:new Date().toLocaleString(),
+    scenario:activeScen,
+    compCount:comps.length,
+    wireCount:wires.length,
+    comps:comps.map(comp=>({
+      id:comp.id,type:comp.type,data:{...comp.data},
+      x:comp.x,y:comp.y,gauge:comp.gauge
+    })),
+    wires:wires.map(w=>({...w})),
+    nid
+  };
+  try{
+    localStorage.setItem(key,JSON.stringify(data));
+    nameEl.value='';
+    renderSaveList();
+  }catch(err){
+    alert('Could not save: '+err.message+'. Your browser storage may be full or disabled.');
+  }
+}
+
+function renderSaveList(){
+  const list=document.getElementById('sl-list');
+  const keys=Object.keys(localStorage)
+    .filter(k=>k.startsWith(STORAGE_PREFIX))
+    .sort((a,b)=>b.localeCompare(a)); // newest first
+  if(!keys.length){
+    list.innerHTML='<div class="sl-empty">No saved designs yet.<br>Build something and click Save Current.</div>';
+    return;
+  }
+  list.innerHTML='';
+  keys.forEach(key=>{
+    try{
+      const d=JSON.parse(localStorage.getItem(key));
+      if(!d)return;
+      const card=document.createElement('div');
+      card.className='sl-card';card.setAttribute('role','listitem');
+      const scenName=SCENS[d.scenario]?.name||d.scenario||'Free Build';
+      card.innerHTML=
+        '<div class="sl-card-info">'
+        +'<div class="sl-card-name">'+d.name+'</div>'
+        +'<div class="sl-card-meta">'+scenName+' &middot; '+d.compCount+' components &middot; '+d.wireCount+' wires &middot; '+d.savedAt+'</div>'
+        +'</div>'
+        +'<div class="sl-card-btns">'
+        +'<button class="sl-lb sl-load" onclick="loadDesign(\''+key+'\')" aria-label="Load '+d.name+'">&#128260; Load</button>'
+        +'<button class="sl-lb sl-exp" onclick="exportDesign(\''+key+'\')" aria-label="Export '+d.name+' as file">&#8675; Export</button>'
+        +'<button class="sl-lb sl-del" onclick="deleteDesign(\''+key+'\')" aria-label="Delete '+d.name+'">&#128465;</button>'
+        +'</div>';
+      list.appendChild(card);
+    }catch(e){/* skip malformed */}
+  });
+}
+
+function applyDesign(d){
+  clearAll();
+  nid=d.nid||1;
+  setScen(d.scenario||'free');
+  d.comps.forEach(saved=>{
+    addComp(saved.data,saved.x,saved.y);
+    const placed=comps[comps.length-1];
+    if(placed&&placed.id!==saved.id){
+      placed.el.id=saved.id;
+      placed.el.querySelectorAll('[id]').forEach(el=>{
+        el.id=el.id.replace(placed.id,saved.id);
+      });
+      placed.el.querySelectorAll('[data-c]').forEach(el=>{
+        el.dataset.c=saved.id;
+      });
+      placed.el.querySelectorAll('[onclick]').forEach(el=>{
+        el.setAttribute('onclick',el.getAttribute('onclick').replace(placed.id,saved.id));
+      });
+      placed.id=saved.id;
+    }
+    if(saved.gauge)placed.gauge=saved.gauge;
+  });
+  d.wires.forEach(w=>wires.push({...w}));
+  wires.forEach(w=>{
+    [document.getElementById(w.a+'-'+w.ap),document.getElementById(w.b+'-'+w.bp)]
+      .forEach(p=>{if(p)p.classList.add('used');});
+  });
+  document.getElementById('hint0').style.display=comps.length?'none':'block';
+  updateLiveness();
+  drawWires();
+}
+
+function loadDesign(key){
+  if(!confirm('Load this design? Your current canvas will be cleared.'))return;
+  try{
+    const d=JSON.parse(localStorage.getItem(key));
+    if(!d)throw new Error('Design not found');
+    applyDesign(d);
+    closeSaveLoad();
+  }catch(err){alert('Could not load: '+err.message);}
+}
+
+function deleteDesign(key){
+  if(!confirm('Delete this saved design? This cannot be undone.'))return;
+  localStorage.removeItem(key);
+  renderSaveList();
+}
+
+// Export design as a downloadable JSON file
+function exportDesign(key){
+  const raw=localStorage.getItem(key);
+  if(!raw){alert('Design not found.');return;}
+  const d=JSON.parse(raw);
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=d.name.replace(/[^a-z0-9]/gi,'_')+'_solar.json';
+  a.click();URL.revokeObjectURL(url);
+}
+
+// Export current canvas (unsaved) as JSON file
+function exportCurrent(){
+  if(!comps.length){alert('Nothing to export -- add some components first.');return;}
+  const name=prompt('Name for this export:','My Solar Design')||'My Solar Design';
+  const data={
+    name,savedAt:new Date().toLocaleString(),
+    scenario:activeScen,compCount:comps.length,wireCount:wires.length,
+    comps:comps.map(comp=>({id:comp.id,type:comp.type,data:{...comp.data},x:comp.x,y:comp.y,gauge:comp.gauge})),
+    wires:wires.map(w=>({...w})),nid
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=name.replace(/[^a-z0-9]/gi,'_')+'_solar.json';
+  a.click();URL.revokeObjectURL(url);
+}
+
+// Import a design from a JSON file
+function importDesign(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!d.comps||!d.wires)throw new Error('Invalid design file.');
+      if(!confirm('Import "'+d.name+'"? Your current canvas will be cleared.'))return;
+      applyDesign(d);
+      closeSaveLoad();
+    }catch(err){alert('Could not import: '+err.message);}
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(tutActive){exitTutorial();return;}
     if(wireMode)toggleWire();
     closeHint();
     document.getElementById('rmod').classList.remove('show');
+    document.getElementById('slmod').classList.remove('show');
     document.getElementById('tut-done').classList.remove('show');
   }
 });
